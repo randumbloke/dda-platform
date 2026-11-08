@@ -33,6 +33,7 @@ envs/
 scripts/
   compare_roots.sh         root-module comparison across envs/ and tiers/ (section 6.3)
   policy_checks.sh         IAM ownership, dataset access, projectReaders, local execution, lock files, pins, workflows
+  test_shim.sh             offline tests of the shim scripts (stub curl: 409 compare, 404 delete, polling, timeout, updateMask, etag)
   schemas/                 labels.json schema
 .github/workflows/ci.yml   ci-checks (section 6.3)
 .tflint.hcl                tflint with the Google ruleset
@@ -95,6 +96,7 @@ for d in modules/*/ modules/data_domain_shim/*/; do (cd $d && terraform init -ba
 for d in modules/project_factory modules/api_services modules/data_domain_shim/domain modules/data_domain_shim/binding tiers/nonprod envs/dev; do (cd $d && terraform test); done
 bash scripts/compare_roots.sh
 bash scripts/policy_checks.sh
+bash scripts/test_shim.sh
 uvx --from check-jsonschema==0.33.0 check-jsonschema --schemafile scripts/schemas/labels.schema.json envs/labels.json
 ```
 

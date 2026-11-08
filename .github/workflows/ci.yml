@@ -95,9 +95,10 @@ jobs:
       - name: Policy checks (IAM ownership, dataset access, projectReaders, local execution, lock files, pins, workflows)
         run: bash scripts/policy_checks.sh
 
-      - name: Shell syntax of the shim scripts
+      - name: Shim scripts (syntax and offline tests with a stub curl)
         run: |
           for f in modules/data_domain_shim/*/scripts/*.sh scripts/*.sh; do bash -n "$f"; done
+          bash scripts/test_shim.sh
 
       - name: JSON Schema validation
         run: |
