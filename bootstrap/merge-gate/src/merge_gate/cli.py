@@ -65,7 +65,7 @@ def main(argv: Sequence[str] | None = None) -> int:
         token = MetadataToken(http)
         store = GcsStore(_env("STATE_BUCKET"), http, token)
         if args.command == "check":
-            gh = GitHub(_env("GITHUB_OWNER"), args.repo, _env("GATE_TOKEN", required=False), http)
+            gh = GitHub(_env("GITHUB_OWNER"), args.repo, _env("GATE_TOKEN"), http)
             gate = Gate(
                 github=gh,
                 store=store,
@@ -99,7 +99,7 @@ def main(argv: Sequence[str] | None = None) -> int:
             if ".." not in args.commit_range:
                 raise GateError("--range must be FIRST..LAST")
             first, last = args.commit_range.split("..", 1)
-            gh = GitHub(_env("GITHUB_OWNER"), args.repo, _env("GATE_TOKEN", required=False), http)
+            gh = GitHub(_env("GITHUB_OWNER"), args.repo, _env("GATE_TOKEN"), http)
             ok, detail = Override(
                 gh, store, CloudBuild(_env("GATE_PROJECT"), _env("GATE_REGION"), http, token)
             ).run(first, last, args.revert_pr, args.reason, _env("BUILD_ID"))
