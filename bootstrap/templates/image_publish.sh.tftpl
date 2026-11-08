@@ -1,0 +1,16 @@
+set -euo pipefail
+# Image variant, part 2 in the runner image: publish outputs/kc-control-plane/images.json
+# (contracts: schemas/images.schema.json) and record the digests in the build log.
+echo '{"images": {}}' > /workspace/images.json
+while read -r NAME REPOSITORY DIGEST; do
+  case "$$DIGEST" in
+    sha256:*) ;;
+    *) echo "bad digest for $$NAME: $$DIGEST" >&2; exit 1 ;;
+  esac
+  jq --arg n "$$NAME" --arg r "$$REPOSITORY" --arg d "$$DIGEST" --arg c "$COMMIT_SHA" \
+    '.images[$$n] = {repository: $$r, digest: $$d, commit: $$c}' /workspace/images.json > /workspace/images.tmp
+  mv /workspace/images.tmp /workspace/images.json
+done < /workspace/digests.txt
+cat /workspace/images.json
+gcloud storage cp /workspace/images.json "gs://${bucket}/outputs/kc-control-plane/images.json" \
+  --content-type=application/json

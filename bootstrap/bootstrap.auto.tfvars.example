@@ -1,0 +1,22 @@
+# Copy to bootstrap.auto.tfvars (git-ignored) and fill in. Keep a copy in the bootstrap state
+# folder: gs://tfstate-pltfrm-ngnrng/terraform/state/dda-platform/bootstrap/ (§6.6).
+
+organization_id = "1059663003036"
+customer_id     = "C0000000" # VERIFY IN BUILD (estate): gcloud organizations describe 1059663003036
+billing_account = "000000-000000-000000" # VERIFY IN BUILD (estate): gcloud billing projects describe pltfrm-ngnrng
+
+approval_groups = {
+  "dda-platform-engineers"   = [{ github_login = "randumbloke", google_account = "mikegyoung@google.com" }]
+  "dda-release-approvers"    = [{ github_login = "randumbloke", google_account = "mikegyoung@google.com" }]
+  "dda-governance-admins"    = [{ github_login = "randumbloke", google_account = "mikegyoung@google.com" }]
+  "dda-governance-engineers" = [{ github_login = "randumbloke", google_account = "mikegyoung@google.com" }]
+  "dda-customer-producers"   = [{ github_login = "randumbloke", google_account = "mikegyoung@google.com" }]
+  "dda-accounts-producers"   = [{ github_login = "randumbloke", google_account = "mikegyoung@google.com" }]
+}
+
+alert_notification_emails = ["mikegyoung@google.com"]
+
+# token_expiry_dates = {
+#   "merge-gate-token"        = "2027-11-09"
+#   "github-connection-token" = "2027-11-09"
+# }

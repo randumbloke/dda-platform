@@ -1,0 +1,12 @@
+# Sensitive inputs (§6.6): never committed.
+bootstrap.auto.tfvars
+*.auto.tfvars
+.terraform/
+*.tfstate
+*.tfstate.*
+tfplan
+backend_override.tf
+# merge gate
+merge-gate/.venv/
+merge-gate/.pytest_cache/
+**/__pycache__/

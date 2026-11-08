@@ -1,0 +1,14 @@
+set -euo pipefail
+# Image variant (design §6.4.2, §6.10), part 1 in the docker builder: build each control plane
+# image once per merge and push it to dda-control-plane tagged with the commit SHA. Digests go to
+# /workspace/digests.txt for part 2 (publish), which runs in the runner image (jq, gcloud).
+REPO_PATH="${registry}"
+: > /workspace/digests.txt
+%{ for name, dockerfile in images ~}
+echo "== image ${name}: build from ${dockerfile}"
+docker build -f "${dockerfile}" -t "$$REPO_PATH/${name}:$COMMIT_SHA" .
+docker push "$$REPO_PATH/${name}:$COMMIT_SHA"
+DIGEST=$$(docker inspect --format='{{index .RepoDigests 0}}' "$$REPO_PATH/${name}:$COMMIT_SHA" | sed 's/.*@//')
+echo "== image ${name}: $$DIGEST"
+echo "${name} $$REPO_PATH/${name} $$DIGEST" >> /workspace/digests.txt
+%{ endfor ~}
