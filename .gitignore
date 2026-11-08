@@ -1,0 +1,27 @@
+# Terraform working directories and local state
+**/.terraform/*
+*.tfstate
+*.tfstate.*
+crash.log
+crash.*.log
+*.tfplan
+tfplan
+override.tf
+override.tf.json
+*_override.tf
+*_override.tf.json
+
+# Lock files are committed for root modules only (envs/, tiers/, bootstrap/; design section 6.11)
+modules/**/.terraform.lock.hcl
+
+# Sensitive bootstrap inputs are git-ignored (design section 6.2); owned by bootstrap/
+*.auto.tfvars
+
+# Python / tooling
+__pycache__/
+.venv/
+.pytest_cache/
+.ruff_cache/
+
+# OS
+.DS_Store

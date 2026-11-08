@@ -1,0 +1,46 @@
+{
+  "$comment": "Labels of design section 1.6 (decision P1-7), read by modules/label_gen. 'static': fixed values; 'keys': labels the role takes from the caller (env, tier, domain); 'required': keys a supplied project of that role must carry (sections 2.2, 6.13.5).",
+  "common": {},
+  "roles": {
+    "hub": {
+      "static": { "dda-domain": "shared" },
+      "keys": ["dda-tier"],
+      "required": ["dda-domain", "dda-tier"]
+    },
+    "cicd": {
+      "static": { "dda-domain": "shared" },
+      "keys": [],
+      "required": ["dda-domain"]
+    },
+    "core_data": {
+      "static": { "dda-domain": "shared" },
+      "keys": ["dda-env"],
+      "required": ["dda-domain", "dda-env"]
+    },
+    "analytics": {
+      "static": {},
+      "keys": ["dda-domain", "dda-env"],
+      "required": ["dda-domain", "dda-env"]
+    },
+    "dataset": {
+      "static": {},
+      "keys": ["dda-domain"],
+      "required": ["dda-domain", "dda-stage", "cdmc-sensitivity"]
+    },
+    "scan": {
+      "static": {},
+      "keys": ["dda-domain", "dda-env"],
+      "required": ["dda-domain", "dda-env"]
+    },
+    "component": {
+      "static": { "dda-domain": "shared" },
+      "keys": [],
+      "required": ["dda-domain", "dda-component"]
+    },
+    "platform": {
+      "static": { "dda-domain": "shared" },
+      "keys": ["dda-env"],
+      "required": ["dda-domain"]
+    }
+  }
+}
