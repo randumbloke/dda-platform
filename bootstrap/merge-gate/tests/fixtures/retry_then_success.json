@@ -1,0 +1,139 @@
+{
+  "description": "Associated pulls: 502, then 429 with Retry-After 3, then a timeout, then 200. Waits 2, 3, 8 s.",
+  "env": "dev",
+  "expected": {
+    "failed_checks": [],
+    "passed": true,
+    "sleeps": [
+      2,
+      3,
+      8
+    ]
+  },
+  "mode": "apply",
+  "owner": "randumbloke",
+  "repo": "dda-customer",
+  "responses": {
+    "GET /repos/randumbloke/dda-customer/commits/b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1/check-runs": [
+      {
+        "body": {
+          "check_runs": [
+            {
+              "app": {
+                "slug": "github-actions"
+              },
+              "conclusion": "success",
+              "id": 1,
+              "name": "ci-checks",
+              "started_at": "2026-11-09T01:01:00Z",
+              "status": "completed"
+            }
+          ],
+          "total_count": 1
+        },
+        "headers": {},
+        "status": 200
+      }
+    ],
+    "GET /repos/randumbloke/dda-customer/commits/b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1/pulls": [
+      {
+        "status": 502
+      },
+      {
+        "headers": {
+          "Retry-After": "3"
+        },
+        "status": 429
+      },
+      {
+        "error": "timed out"
+      },
+      {
+        "body": [
+          {
+            "base": {
+              "ref": "main"
+            },
+            "head": {
+              "sha": "e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4"
+            },
+            "merge_commit_sha": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+            "merged_at": "2026-11-09T01:00:00Z",
+            "merged_by": {
+              "login": "randumbloke"
+            },
+            "number": 9,
+            "user": {
+              "login": "randumbloke"
+            }
+          }
+        ],
+        "headers": {},
+        "status": 200
+      }
+    ],
+    "GET /repos/randumbloke/dda-customer/compare/a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0...b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1": [
+      {
+        "body": {
+          "commits": [
+            {
+              "sha": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1"
+            }
+          ],
+          "status": "ahead"
+        },
+        "headers": {},
+        "status": 200
+      }
+    ],
+    "GET /repos/randumbloke/dda-customer/pulls/9": [
+      {
+        "body": {
+          "base": {
+            "ref": "main"
+          },
+          "head": {
+            "sha": "e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4e4"
+          },
+          "merge_commit_sha": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+          "merged_at": "2026-11-09T01:00:00Z",
+          "merged_by": {
+            "login": "randumbloke"
+          },
+          "number": 9,
+          "user": {
+            "login": "randumbloke"
+          }
+        },
+        "headers": {},
+        "status": 200
+      }
+    ]
+  },
+  "sha": "b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1b1",
+  "store": {
+    "bootstrap/identities.json": {
+      "data": {
+        "generated_by": "bootstrap",
+        "groups": {
+          "dda-platform-engineers": [
+            {
+              "github_login": "randumbloke",
+              "google_account": "mikegyoung@google.com"
+            }
+          ]
+        },
+        "machine_users": [
+          "dda-scangen-bot",
+          "dda-gate-bot"
+        ]
+      }
+    },
+    "promotions/dda-customer/dev/a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0": {
+      "data": {
+        "sha": "a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0a0"
+      },
+      "time": "2026-11-08T00:00:00Z"
+    }
+  }
+}

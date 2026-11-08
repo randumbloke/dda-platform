@@ -1,0 +1,50 @@
+# Build the Terraform runner image and push it to Artifact Registry dda-ci (design §6.4.2,
+# §6.6.2 step 2). Run by a bootstrap administrator from a clean checkout of the reviewed
+# dda-platform commit; never by a trigger:
+#
+#   gcloud builds submit bootstrap/runner \
+#     --project=pltfrm-ngnrng --region=australia-southeast1 \
+#     --config=bootstrap/runner/cloudbuild.yaml \
+#     --substitutions=_TAG=$(git rev-parse HEAD)
+#
+# The digest printed by the last step is the stage 2 input runner_image_digest.
+substitutions:
+  _REGION: australia-southeast1
+  _PROJECT: pltfrm-ngnrng
+  _TAG: manual
+  _TERRAFORM_VERSION: 1.16.3
+
+steps:
+  - id: build
+    # VERIFY IN BUILD (estate): pin the docker builder by digest.
+    name: gcr.io/cloud-builders/docker
+    args:
+      - build
+      - --build-arg=TERRAFORM_VERSION=${_TERRAFORM_VERSION}
+      - --build-arg=TARGETARCH=amd64
+      - -t
+      - ${_REGION}-docker.pkg.dev/${_PROJECT}/dda-ci/terraform-runner:${_TAG}
+      - .
+
+  - id: check-version
+    name: ${_REGION}-docker.pkg.dev/${_PROJECT}/dda-ci/terraform-runner:${_TAG}
+    entrypoint: /opt/dda/bin/check-terraform-version
+    args: ["${_TERRAFORM_VERSION}"]
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: ["push", "${_REGION}-docker.pkg.dev/${_PROJECT}/dda-ci/terraform-runner:${_TAG}"]
+
+  - id: digest
+    name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+    entrypoint: bash
+    args:
+      - -c
+      - >-
+        gcloud artifacts docker images describe
+        ${_REGION}-docker.pkg.dev/${_PROJECT}/dda-ci/terraform-runner:${_TAG}
+        --format='value(image_summary.digest)'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: 1800s

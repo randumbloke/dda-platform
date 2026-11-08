@@ -1,0 +1,42 @@
+# Build the merge gate image and push it to Artifact Registry dda-ci (design §6.6.2 step 2).
+# Run by a bootstrap administrator from a clean checkout of the reviewed dda-platform commit:
+#
+#   gcloud builds submit bootstrap/merge-gate \
+#     --project=pltfrm-ngnrng --region=australia-southeast1 \
+#     --config=bootstrap/merge-gate/cloudbuild.yaml \
+#     --substitutions=_TAG=$(git rev-parse HEAD)
+#
+# The digest printed by the last step is the stage 2 input merge_gate_image_digest.
+substitutions:
+  _REGION: australia-southeast1
+  _PROJECT: pltfrm-ngnrng
+  _TAG: manual
+
+steps:
+  - id: test
+    # VERIFY IN BUILD (estate): pin by digest.
+    name: ghcr.io/astral-sh/uv:python3.13-bookworm-slim
+    entrypoint: bash
+    args: ["-c", "uv sync --frozen && uv run pytest && uv run ruff check ."]
+
+  - id: build
+    name: gcr.io/cloud-builders/docker
+    args: ["build", "-t", "${_REGION}-docker.pkg.dev/${_PROJECT}/dda-ci/merge-gate:${_TAG}", "."]
+
+  - id: push
+    name: gcr.io/cloud-builders/docker
+    args: ["push", "${_REGION}-docker.pkg.dev/${_PROJECT}/dda-ci/merge-gate:${_TAG}"]
+
+  - id: digest
+    name: gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
+    entrypoint: bash
+    args:
+      - -c
+      - >-
+        gcloud artifacts docker images describe
+        ${_REGION}-docker.pkg.dev/${_PROJECT}/dda-ci/merge-gate:${_TAG}
+        --format='value(image_summary.digest)'
+
+options:
+  logging: CLOUD_LOGGING_ONLY
+timeout: 1200s
