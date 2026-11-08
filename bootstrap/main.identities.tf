@@ -68,8 +68,12 @@ locals {
     "roles/dataplex.dataScanAdmin",
     "roles/dlp.admin",
     "roles/logging.configWriter",
-    # P6-39 reference pipelines: Cloud Run job and daily schedule under the ingest account.
-    # Not in the §2.4.4 table; listed as a contract difference.
+  ]
+  # P6-39 reference pipelines (dda-<business>/envs/dev/core/main.pipeline.tf): the ingest job
+  # runs in the core data project as <business>-ingest-<env>, the build job in the analytics
+  # project as <business>-analytics-<env>, each with a Cloud Scheduler job. Not in the §2.4.4
+  # table (contracts CD-16).
+  deployer_roles_pipeline = [
     "roles/run.admin",
     "roles/cloudscheduler.admin",
     "roles/iam.serviceAccountUser",
@@ -87,6 +91,7 @@ locals {
     { for pair in setproduct(local.core_projects, local.deployer_roles_core) : "${pair[0]}|${pair[1]}" => { project = pair[0], role = pair[1] } },
     { for pair in setproduct(local.analytics_projects, local.deployer_roles_analytics) : "${pair[0]}|${pair[1]}" => { project = pair[0], role = pair[1] } },
     { for pair in setproduct(local.estate_projects, local.deployer_roles_all) : "${pair[0]}|${pair[1]}" => { project = pair[0], role = pair[1] } },
+    { for pair in setproduct(local.data_projects, local.deployer_roles_pipeline) : "${pair[0]}|${pair[1]}" => { project = pair[0], role = pair[1] } },
   )
 
   # Custom roles granted at project scope (organisation custom roles, main.org.tf).

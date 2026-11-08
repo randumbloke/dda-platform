@@ -69,3 +69,53 @@ resource "google_artifact_registry_repository_iam_member" "control_plane_hub_run
   role       = "roles/artifactregistry.reader"
   member     = "serviceAccount:${each.value}"
 }
+
+# --------------------------------------------------------------------------------------------
+# dda-pipelines: images of the domain repositories' reference pipelines (P6-39; contracts CD-12).
+# VERIFY IN BUILD (estate): §6.10 lists only dda-ci and dda-control-plane; this repository is
+# added for the domain pipelines' Cloud Run jobs and needs a design change (CD-12).
+# Writer: tf-deployer (domain apply builds push pipeline images, single_deployer). Readers: the
+# Cloud Run service agents of the core data and analytics projects, where the jobs run (ingest
+# job in the core data project, build job in the analytics project; main.pipeline.tf).
+# --------------------------------------------------------------------------------------------
+
+resource "google_artifact_registry_repository" "dda_pipelines" {
+  project       = local.cicd
+  location      = local.home_region
+  repository_id = "dda-pipelines"
+  format        = "DOCKER"
+  description   = "DDA domain pipeline images (P6-39), tagged by domain repository commit SHA."
+
+  docker_config {
+    immutable_tags = true
+  }
+
+  labels = {
+    dda-domain = "shared"
+  }
+
+  depends_on = [google_project_service.cicd]
+}
+
+data "google_project" "data" {
+  for_each   = toset(local.data_projects)
+  project_id = each.value
+}
+
+resource "google_artifact_registry_repository_iam_member" "pipelines_writer" {
+  project    = local.cicd
+  location   = local.home_region
+  repository = google_artifact_registry_repository.dda_pipelines.name
+  role       = "roles/artifactregistry.writer"
+  member     = "serviceAccount:${local.deployer_email}"
+}
+
+resource "google_artifact_registry_repository_iam_member" "pipelines_run_agent" {
+  for_each = data.google_project.data
+
+  project    = local.cicd
+  location   = local.home_region
+  repository = google_artifact_registry_repository.dda_pipelines.name
+  role       = "roles/artifactregistry.reader"
+  member     = "serviceAccount:service-${each.value.number}@serverless-robot-prod.iam.gserviceaccount.com"
+}

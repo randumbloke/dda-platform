@@ -195,6 +195,11 @@ run "stage_1" {
   }
 
   assert {
+    condition     = google_artifact_registry_repository.dda_pipelines.repository_id == "dda-pipelines" && length(google_artifact_registry_repository_iam_member.pipelines_run_agent) == 3 && contains(keys(google_project_iam_member.deployer), "kcdda-core-dwh-dev|roles/run.admin")
+    error_message = "dda-pipelines with a reader grant per data project (CD-12); pipeline roles on the core project."
+  }
+
+  assert {
     condition     = length(google_secret_manager_secret.secret) == 2 && length(google_cloudbuild_trigger.trigger) == 0
     error_message = "Stage 1: two secrets, no triggers."
   }

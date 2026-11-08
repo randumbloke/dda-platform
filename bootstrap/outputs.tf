@@ -21,6 +21,7 @@ output "artifact_registry" {
   value = {
     dda_ci            = "${local.ar_host}/${local.cicd}/${google_artifact_registry_repository.dda_ci.repository_id}"
     dda_control_plane = "${local.ar_host}/${local.cicd}/${google_artifact_registry_repository.dda_control_plane.repository_id}"
+    dda_pipelines     = "${local.ar_host}/${local.cicd}/${google_artifact_registry_repository.dda_pipelines.repository_id}"
   }
 }
 

@@ -22,7 +22,7 @@ bootstrap/
   main.org.tf          # organisation custom roles (§1.5.2, §2.3.1, §2.4.7); org policies at count = 0 (OD-1)
   main.audit.tf        # admin-activity sink (CI/CD project), log bucket, alert (§6.15.4)
   main.state.tf        # tfstate-pltfrm-ngnrng, managed folders, one writer per folder (§6.8, §6.7.2)
-  main.registry.tf     # Artifact Registry dda-ci and dda-control-plane (§6.10)
+  main.registry.tf     # Artifact Registry dda-ci, dda-control-plane (§6.10), dda-pipelines (CD-12)
   main.identities.tf   # tf-deployer, tf-deployer-plan and their grants (§2.4.4, §6.7.2)
   main.secrets.tf      # connection token and merge gate token secrets, no versions (§6.6.1)
   main.github.tf       # repositories (dda-platform imported), collaborators, rulesets, group memberships
@@ -33,6 +33,7 @@ bootstrap/
   tests/               # terraform test with mocked providers (offline)
   merge-gate/          # merge gate code, golden-fixture tests, image build (§6.5)
   runner/              # Terraform runner image and its build (§6.4.2)
+  owner/               # owner tasks 2.1-2.6: read-only inventory and IAM review, dry-run setup scripts
 ```
 
 ### Stages
@@ -85,6 +86,9 @@ also the owner of the GitHub account `randumbloke` (§6.6). For phase 1 that is 
 `mikegyoung@google.com` (OD-2; a residual risk, below §6.15.4's two or three).
 
 ### 0. Before the first apply (owner, once; change tasks 2.3, 2.5, 2.6)
+
+The scripts in [`owner/`](owner/README.md) do steps 1 to 3 idempotently, with `--dry-run` by
+default; the commands below show what they run.
 
 1. Create the group and add the administrator. The group must allow members outside the
    organisation (Admin console, group settings), because the member is a `google.com` account:
@@ -199,6 +203,11 @@ a new image, and a stage 2 apply with the new digest (§6.6.2).
 
 ### 5. Later
 
+- Domain pipeline images (P6-39) go to `dda-pipelines`. Submit the domain repository's
+  `pipelines/cloudbuild.yaml` as `tf-deployer`, the repository's only writer:
+  `gcloud builds submit --config pipelines/cloudbuild.yaml --service-account=projects/pltfrm-ngnrng/serviceAccounts/tf-deployer@pltfrm-ngnrng.iam.gserviceaccount.com ...`.
+  Tags are immutable, so deploy by digest, not `:latest`.
+
 - After the first `dda-platform` merge build, re-apply (§6.6.2 step 5) for hub-dependent items.
 - Domain onboarding (§6.6.5): add the domain to `domains` and its producers group to
   `approval_groups`, then apply.
@@ -214,9 +223,9 @@ a new image, and a stage 2 apply with the new digest (§6.6.2).
 - Each stack runs `init`, `plan` and `apply` (design steps 1 to 3) in one build step, so the
   retry of P6-27 can re-run `plan` and `apply` in place.
 - `tf-deployer` also gets `roles/resourcemanager.projectIamAdmin` on the estate projects (the
-  project-level agent grants of §6.15.1 need it) and, on the analytics projects,
+  project-level agent grants of §6.15.1 need it) and, on the core data and analytics projects,
   `roles/run.admin`, `roles/cloudscheduler.admin` and `roles/iam.serviceAccountUser` for the
-  P6-39 Cloud Run job. Neither is in the §2.4.4 table.
+  P6-39 Cloud Run jobs (ingest job in the core data project, build job in the analytics project). Neither is in the §2.4.4 table.
 - The image build records digests in `outputs/kc-control-plane/images.json` and the build log,
   not in the build's `results.images`.
 - `identities.json` carries `generated_by` instead of `generated_at`, so that re-applies do not
@@ -226,6 +235,7 @@ a new image, and a stage 2 apply with the new digest (§6.6.2).
 - `tf-deployer` and `tf-deployer-plan` get `roles/storage.bucketViewer` on the state bucket
   (bucket metadata for the gcs backend and `gcloud storage`); §6.8 lists managed-folder grants
   only.
+- Artifact Registry `dda-pipelines` (domain pipeline images, contracts CD-12) is not in §6.10.
 - `cicd_project_id` must be set (the contracts allow `null`, the hub-as-CI/CD layout); phase 1
   uses the dedicated `pltfrm-ngnrng`.
 - Only `single_deployer = true`, `create_projects = false` and `github_owner_type = "user"` are
@@ -233,7 +243,9 @@ a new image, and a stage 2 apply with the new digest (§6.6.2).
 
 ## Not drafted here
 
-Hub workload service accounts and their grants (§6.6.2 step 5, §2.4.1); `evaluator-prod` grants;
+Hub workload service accounts (`evaluator-dev`) and the domains' ingest and analytics service
+accounts: in phase 1 the owner creates them by hand (change task 2.5, §6.17 asks table; see
+`owner/`), so they stay out of bootstrap. Their grants (§2.4.1); `evaluator-prod` grants;
 teams for `organization` mode; promotion topics and triggers (no `test`, `uat` or `prod`).
 
 ## VERIFY IN BUILD markers
@@ -253,4 +265,5 @@ teams for `organization` mode; promotion topics and triggers (no `test`, `uat` o
 | VA-92 | `merge-gate/src/merge_gate/cli.py` | Pub/Sub publish queues the promotion build |
 | VA-99 | `main.identities.tf`, `main.org.tf`, this README | role and permission names |
 | VA-101 | `main.services.tf` | Cloud Build agent email when identities are not generated |
+| estate | `main.registry.tf` | `dda-pipelines` repository, not in §6.10 (CD-12) |
 | estate | `bootstrap.auto.tfvars.example`, `main.audit.tf`, `main.triggers.tf`, `runner/`, `merge-gate/` | customer ID, billing account, base image digests, sink writer grant, Dockerfile path |
