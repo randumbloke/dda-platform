@@ -12,7 +12,7 @@ substitutions:
   _REGION: australia-southeast1
   _PROJECT: pltfrm-ngnrng
   _TAG: manual
-  _TERRAFORM_VERSION: 1.16.3
+  _TERRAFORM_VERSION: 1.17.1
 
 steps:
   - id: build

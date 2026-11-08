@@ -12,12 +12,12 @@
  */
 
 terraform {
-  required_version = "~> 1.16"
+  required_version = ">= 1.17"
 
   required_providers {
     google-beta = {
       source  = "hashicorp/google-beta"
-      version = "8.10.0"
+      version = "~> 8.10"
       # Reason: google_project_service_identity has no GA form at 8.10.0.
     }
   }

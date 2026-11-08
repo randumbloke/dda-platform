@@ -86,7 +86,7 @@ Source: `git::https://github.com/randumbloke/dda-platform.git//modules/data_doma
 
 ## Running the checks
 
-Requirements: Terraform 1.16.x, bash, jq, `uv` (for `uvx`). From the repository root:
+Requirements: Terraform 1.17.1 or later, bash, jq, `uv` (for `uvx`). From the repository root:
 
 ```bash
 terraform fmt -check -recursive
@@ -158,8 +158,8 @@ Service accounts (`evaluator-dev`, `<business>-ingest-dev` in the core data proj
 - Ingest service accounts: the contracts (section 2) put `<business>-ingest-dev` in the analytics
   projects; design sections 2.2 and 2.4.2 put them in the core data project, which is used and
   published in `domain_service_accounts`.
-- Versions: design section 6.11 says `>= 1.17` and `~> 8.10`; the phase 1 brief and contracts say
-  `~> 1.16` and exactly `8.10.0`, which are used.
+- Versions: design section 6.11 (`>= 1.17`, `~> 8.10`, runner Terraform 1.17.1), owner decision
+  OD-4 (2026-11-09).
 - `policy_member` is the `iamPolicyNamePrincipal` string of the `policyMember` object (orchestrator
   decision); `binding` has one optional input, `organization_id`, beyond the design table.
 - `terraform_data.iam` is also re-run when the domain is recreated (a new domain has an empty

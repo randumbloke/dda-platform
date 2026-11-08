@@ -76,7 +76,7 @@ uv sync
 uv run pytest                        # golden fixtures, no network
 uv run ruff check .
 
-bash runner/check-terraform-version.sh 1.16.3   # on a workstation with Terraform 1.16.3
+bash runner/check-terraform-version.sh 1.17.1   # on a workstation with Terraform 1.17.1
 ```
 
 ## Runbook (human apply)
@@ -216,7 +216,7 @@ a new image, and a stage 2 apply with the new digest (§6.6.2).
 
 ## Contract and design differences
 
-- Terraform `1.16.3` and `required_version = "~> 1.16"`, `google`/`google-beta` exactly `8.10.0`
+- Terraform `1.17.1` and `required_version = ">= 1.17"`, `google`/`google-beta` `~> 8.10` (design §6.11, OD-4)
   (contracts), where design §6.4.2 and §6.11 say 1.17.1, `>= 1.17` and `~> 8.10`.
 - The host connection and linked repositories are created at stage 2, not stage 1 (§6.6.1): a
   connection cannot be created before its token secret has a version (§6.6.2 step 2).

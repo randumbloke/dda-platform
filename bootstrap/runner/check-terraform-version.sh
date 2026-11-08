@@ -1,9 +1,9 @@
 #!/usr/bin/env bash
 # Asserts that the installed Terraform matches the pin (design §6.11; contracts README §6).
-# Usage: check-terraform-version [expected]   (default: $TERRAFORM_VERSION, else 1.16.3)
+# Usage: check-terraform-version [expected]   (default: $TERRAFORM_VERSION, else 1.17.1)
 set -euo pipefail
 
-expected="${1:-${TERRAFORM_VERSION:-1.16.3}}"
+expected="${1:-${TERRAFORM_VERSION:-1.17.1}}"
 
 if ! command -v terraform >/dev/null 2>&1; then
   echo "terraform not found on PATH" >&2

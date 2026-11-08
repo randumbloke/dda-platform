@@ -2,17 +2,16 @@
 # Built by a bootstrap administrator from the reviewed dda-platform commit and pushed to
 # Artifact Registry dda-ci (runner/cloudbuild.yaml); triggers reference it by digest.
 #
-# Terraform 1.16.3 per the phase 1 contracts (contracts README §6). Design §6.11 names 1.17.1;
-# that difference is reported, not resolved here.
+# Terraform 1.17.1 (design §6.11; owner decision OD-4, 2026-11-09).
 
 # VERIFY IN BUILD (estate): pin by digest (gcloud artifacts docker images describe ...).
 ARG BASE_IMAGE=gcr.io/google.com/cloudsdktool/google-cloud-cli:slim
 FROM ${BASE_IMAGE}
 
-ARG TERRAFORM_VERSION=1.16.3
-# From https://releases.hashicorp.com/terraform/1.16.3/terraform_1.16.3_SHA256SUMS (read 2026-11-09).
-ARG TERRAFORM_SHA256_AMD64=093b6ae9a2228af5029c41606bc96eb583553528aad1bfe7e0b4d62fc91e25d8
-ARG TERRAFORM_SHA256_ARM64=b6b293550af7a6a7ffd867a04900ce161db86ec9407b234a636c2adbae2ca9f0
+ARG TERRAFORM_VERSION=1.17.1
+# From https://releases.hashicorp.com/terraform/1.17.1/terraform_1.17.1_SHA256SUMS (read 2026-11-09).
+ARG TERRAFORM_SHA256_AMD64=4638628058e71a55212b1c563712eac03b902128f40740f3dc8174df12135061
+ARG TERRAFORM_SHA256_ARM64=988e950a1c23058093b0e66ab2d5fb53fc18345ecfbd5871acf51dbac9325edd
 ARG TARGETARCH=amd64
 
 ENV TERRAFORM_VERSION=${TERRAFORM_VERSION} \

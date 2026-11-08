@@ -69,14 +69,14 @@ for r in ${roots[@]+"${roots[@]}"}; do
   [[ -f "$r/.terraform.lock.hcl" ]] || report "$r: no committed .terraform.lock.hcl (section 6.11)"
 done
 for f in "${tf_files[@]}"; do
-  # Inside a required_providers entry for google / google-beta the version must be exactly 8.10.0.
+  # Inside a required_providers entry for google / google-beta the version must be ~> 8.10 (design §6.11).
   awk -v file="$f" '
     /^[[:space:]]*(google|google-beta)[[:space:]]*=[[:space:]]*\{/ { inp=1; next }
     /^[[:space:]]*http[[:space:]]*=[[:space:]]*\{/ { inh=1; next }
-    inp && /version/ { if ($0 !~ /"8\.10\.0"/) { printf "FAIL %s: google provider pin must be exactly 8.10.0: %s\n", file, $0; bad=1 } inp=0 }
+    inp && /version/ { if ($0 !~ /"~> 8\.10"/) { printf "FAIL %s: google provider pin must be ~> 8.10: %s\n", file, $0; bad=1 } inp=0 }
     inh && /version/ { if ($0 !~ /"~> 3\.6"/) { printf "FAIL %s: http provider pin must be ~> 3.6: %s\n", file, $0; bad=1 } inh=0 }
     /^[[:space:]]*\}/ { inp=0; inh=0 }
-    /required_version/ { if ($0 !~ /"~> 1\.16"/) { printf "FAIL %s: required_version must be ~> 1.16: %s\n", file, $0; bad=1 } }
+    /required_version/ { if ($0 !~ /">= 1\.17"/) { printf "FAIL %s: required_version must be >= 1.17: %s\n", file, $0; bad=1 } }
     END { exit bad }
   ' "$f" || fail=1
 done
