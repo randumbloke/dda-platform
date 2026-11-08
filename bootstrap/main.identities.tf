@@ -95,6 +95,9 @@ locals {
     { for p in local.data_projects : "${p}|ddaPipelineCatalogWriter" => { project = p, role = "ddaPipelineCatalogWriter" } },
   )
 
+  # VERIFY IN BUILD (VA-85): roles/viewer and roles/iam.securityReviewer let the plan account run
+  # terraform plan, with refresh, for each stack. They hold no table data, object or secret value
+  # read (VA-90).
   plan_grants = {
     for pair in setproduct(local.estate_projects, ["roles/viewer", "roles/iam.securityReviewer"]) :
     "${pair[0]}|${pair[1]}" => { project = pair[0], role = pair[1] }
@@ -126,7 +129,8 @@ resource "google_project_iam_member" "deployer_plan" {
 }
 
 # CI/CD project (§6.7): build logs for every pipeline and plan account; builds.viewer for apply
-# accounts so the gate can read its build's approval. No account holds cloudbuild.builds.create.
+# accounts so the gate can read its build's approval. No account holds cloudbuild.builds.create,
+# which would also let it edit triggers (VA-83).
 resource "google_project_iam_member" "cicd_log_writer" {
   for_each = { apply = local.deployer_email, plan = local.deployer_plan_email }
 
