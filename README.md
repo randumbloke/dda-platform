@@ -151,6 +151,29 @@ Service accounts (`evaluator-dev`, `<business>-ingest-dev` in the core data proj
 | VA-101 | `modules/service_identities` | Computed agent email forms |
 | estate | `tiers/nonprod/main.project.tf` | Create-mode folder for the hub (unused in phase 1) |
 
+## Differences from the contracts and design, to settle in build
+
+- Module path: design section 2.3 says `modules/data-domain-shim`; the contracts and section 6.13.4
+  say `modules/data_domain_shim`, which is used.
+- Ingest service accounts: the contracts (section 2) put `<business>-ingest-dev` in the analytics
+  projects; design sections 2.2 and 2.4.2 put them in the core data project, which is used and
+  published in `domain_service_accounts`.
+- Versions: design section 6.11 says `>= 1.17` and `~> 8.10`; the phase 1 brief and contracts say
+  `~> 1.16` and exactly `8.10.0`, which are used.
+- `policy_member` is the `iamPolicyNamePrincipal` string of the `policyMember` object (orchestrator
+  decision); `binding` has one optional input, `organization_id`, beyond the design table.
+- `terraform_data.iam` is also re-run when the domain is recreated (a new domain has an empty
+  policy), and the destroy steps refuse to delete a domain or binding that differs from the
+  declaration (a create that failed on 409 leaves the resource tainted).
+- With no folders, the audit sinks are project sinks on the data projects, not aggregated folder
+  sinks (section 2.5).
+- Alerts: section 6.13.2 places alerts in this stack and section 5.8 in `cdmc-governance`; this
+  stack has the dead-letter alerts only.
+- Landing buckets: the ingest account has `roles/storage.objectViewer` only (section 2.4.2); the
+  P6-39 generator that writes CSV files needs a writer identity that the design does not name.
+- `data.http` uses the `google_client_config` token (section 2.3.2), so that token is held in the
+  plan and state of the calling stack.
+
 ## Incomplete in this draft
 
 - Create mode: environment folders (`shared/<env>`, `<business>/<env>`) and the `org/` stack are not
