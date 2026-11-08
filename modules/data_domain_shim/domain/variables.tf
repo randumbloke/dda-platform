@@ -72,6 +72,9 @@ variable "iam_members" {
   type        = map(list(string))
   default     = {}
 
+  # VERIFY IN BUILD (VA-48): that no role outside this list reaches bound resources through the
+  # domain. VERIFY IN BUILD (VA-87): that ddaDomainBinder on one domain authorises bindings to that
+  # domain and its subdomains only.
   validation {
     condition = alltrue([
       for role in keys(var.iam_members) :

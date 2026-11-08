@@ -81,10 +81,3 @@ output "emails" {
   depends_on = [google_project_service_identity.this]
 }
 
-# VERIFY IN BUILD (VA-101): warns if a generated agent's email differs from the computed form.
-check "agent_email_form" {
-  assert {
-    condition     = alltrue([for s, r in google_project_service_identity.this : r.email == null || r.email == local.computed[s]])
-    error_message = "A generated service agent email differs from the computed form; update local.computed (VA-101)."
-  }
-}

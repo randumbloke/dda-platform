@@ -72,10 +72,10 @@ jobs:
           done
           exit $status
 
-      - name: terraform test (modules with tests)
+      - name: terraform test (mock providers; modules and root modules with tests)
         run: |
           status=0
-          for d in $(find modules -name '*.tftest.hcl' -not -path '*/.terraform/*' -exec dirname {} \; | xargs -n1 dirname | sort -u); do
+          for d in $(find modules tiers envs -name '*.tftest.hcl' -not -path '*/.terraform/*' -exec dirname {} \; | xargs -n1 dirname | sort -u); do
             echo "::group::test $d"
             (cd "$d" && terraform test) || status=1
             echo "::endgroup::"
