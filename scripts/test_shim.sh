@@ -90,11 +90,21 @@ scenario "create 409 with a different domain fails" 1 "$dom/domain_create.sh" \
 scenario "create fails on 403" 1 "$dom/domain_create.sh" \
   "POST${T}dataDomains?dataDomainId${T}403${T}{\"error\":{\"code\":403}}"
 
+scenario "delete of a missing domain succeeds" 0 "$dom/domain_delete.sh" \
+  "GET${T}dataDomains/customer-dev${T}404${T}{}"
+
 scenario "delete 404 succeeds" 0 "$dom/domain_delete.sh" \
+  "GET${T}dataDomains/customer-dev${T}200${T}{\"displayName\":\"Customer (dev)\"}" \
   "DELETE${T}dataDomains/customer-dev${T}404${T}{}"
 
 scenario "delete polls the operation" 0 "$dom/domain_delete.sh" \
+  "GET${T}dataDomains/customer-dev${T}200${T}{\"displayName\":\"Customer (dev)\"}" \
   "DELETE${T}dataDomains/customer-dev${T}200${T}{\"name\":\"$OP\",\"done\":true}"
+
+scenario "delete refuses a domain that is not the declared one" 1 "$dom/domain_delete.sh" \
+  "GET${T}dataDomains/customer-dev${T}200${T}{\"displayName\":\"Someone else\"}" \
+  "DELETE${T}dataDomains/customer-dev${T}200${T}{\"name\":\"$OP\",\"done\":true}"
+if grep -q '^DELETE' "$work/calls"; then echo "FAIL a DELETE was sent"; failed=$((failed + 1)); else echo "pass no DELETE sent"; pass=$((pass + 1)); fi
 
 scenario "update patches only the changed field" 0 "$dom/domain_update.sh" \
   "GET${T}dataDomains/customer-dev${T}200${T}{\"displayName\":\"Customer (dev)\",\"contacts\":[{\"role\":\"owner\",\"identity\":\"group:o@x\"}],\"labels\":{\"dda-env\":\"old\"}}" \
@@ -135,7 +145,11 @@ scenario "binding 409 with another resource fails" 1 "$bnd/binding_create.sh" \
   "GET${T}bindings/ds-customer-curated${T}200${T}{\"resource\":\"//bigquery.googleapis.com/projects/core/datasets/other\"}"
 
 scenario "binding delete 404 succeeds" 0 "$bnd/binding_delete.sh" \
+  "GET${T}bindings/ds-customer-curated${T}200${T}{\"resource\":\"$RESOURCE\"}" \
   "DELETE${T}bindings/ds-customer-curated${T}404${T}{}"
+
+scenario "binding delete refuses another resource's binding" 1 "$bnd/binding_delete.sh" \
+  "GET${T}bindings/ds-customer-curated${T}200${T}{\"resource\":\"//bigquery.googleapis.com/projects/core/datasets/other\"}"
 
 echo "$pass passed, $failed failed"
 (( failed == 0 ))

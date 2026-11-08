@@ -44,6 +44,10 @@ locals {
 }
 
 resource "terraform_data" "domain" {
+  # The latest declaration, updated in place (no replacement), so the destroy step can check that
+  # it deletes the domain this module declared (see domain_delete.sh).
+  input = local.domain_body
+
   triggers_replace = {
     project            = var.project
     location           = var.location
@@ -70,6 +74,7 @@ resource "terraform_data" "domain" {
       PROJECT        = self.triggers_replace.project
       LOCATION       = self.triggers_replace.location
       DATA_DOMAIN_ID = self.triggers_replace.data_domain_id
+      DOMAIN_BODY    = jsonencode(self.input)
     }
   }
 }
@@ -108,7 +113,7 @@ resource "terraform_data" "iam" {
 
   lifecycle {
     # A recreated domain starts with an empty policy, so set it again.
-    replace_triggered_by = [terraform_data.domain]
+    replace_triggered_by = [terraform_data.domain.id]
   }
 
   # No destroy step: deleting the domain removes its policy.

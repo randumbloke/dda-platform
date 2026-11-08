@@ -113,6 +113,7 @@ resource "terraform_data" "binding" {
     environment = {
       DOMAIN_NAME = self.triggers_replace.domain_name
       BINDING_ID  = self.triggers_replace.key
+      RESOURCE    = self.triggers_replace.resource
     }
   }
 
