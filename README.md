@@ -100,8 +100,9 @@ bash scripts/test_shim.sh
 uvx --from check-jsonschema==0.33.0 check-jsonschema --schemafile scripts/schemas/labels.schema.json envs/labels.json
 ```
 
-`ci-checks` (GitHub Actions) runs the same plus `tflint` and a `gitleaks` secret scan, holds no
-Google Cloud credential, and pins actions by commit SHA.
+`ci-checks` (GitHub Actions) runs the same plus `tflint` (Google ruleset), a Trivy Terraform
+misconfiguration scan (HIGH and above) and a `gitleaks` secret scan over the change's commits. It
+holds no Google Cloud credential and pins actions by commit SHA.
 
 ## Deployment
 
@@ -154,5 +155,4 @@ Service accounts (`evaluator-dev`, `<business>-ingest-dev` in the core data proj
 
 - Create mode: environment folders (`shared/<env>`, `<business>/<env>`) and the `org/` stack are not
   drafted; with folders the audit sinks would be aggregated folder sinks instead of project sinks.
-- `ci-checks`: no IaC misconfiguration scan (Trivy or Checkov) yet; every check runs on every change
-  (no path filtering).
+- `ci-checks`: every check runs on every change (no path filtering by changed inputs, section 6.3).

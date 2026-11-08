@@ -21,6 +21,7 @@ env:
   TERRAFORM_VERSION: "1.16.3"
   TFLINT_VERSION: "v0.66.0"
   GITLEAKS_VERSION: "8.30.1"
+  TRIVY_VERSION: "0.76.2"
   CHECK_JSONSCHEMA_VERSION: "0.33.0"
   TF_IN_AUTOMATION: "1"
   TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform.d/plugin-cache
@@ -88,6 +89,13 @@ jobs:
           tflint --recursive --config "$GITHUB_WORKSPACE/.tflint.hcl" --format compact
         env:
           GITHUB_TOKEN: ${{ github.token }}
+
+      - name: IaC misconfiguration scan (Trivy, Terraform, HIGH and above)
+        run: |
+          curl -sSfL -o /tmp/trivy.tgz \
+            "https://github.com/aquasecurity/trivy/releases/download/v${TRIVY_VERSION}/trivy_${TRIVY_VERSION}_Linux-64bit.tar.gz"
+          tar -xzf /tmp/trivy.tgz -C /tmp trivy
+          /tmp/trivy config --misconfig-scanners terraform --severity HIGH,CRITICAL --exit-code 1 .
 
       - name: Root-module comparison
         run: bash scripts/compare_roots.sh
