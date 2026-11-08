@@ -162,7 +162,8 @@ gcloud storage cp bootstrap.auto.tfvars gs://tfstate-pltfrm-ngnrng/terraform/sta
 
 Then push each local repository (P6-38): `git remote add origin https://github.com/randumbloke/<repo>.git && git push -u origin main`
 for `cdmc-governance`, `kc-control-plane`, `dda-customer`, `dda-accounts` (and `dda-platform`).
-Re-apply stage 1 with rulesets on:
+In `user` mode each collaborator, including `dda-gate-bot` and `dda-scangen-bot`, gets an
+invitation and must accept it before it has access. Re-apply stage 1 with rulesets on:
 
 ```bash
 terraform plan -var-file=bootstrap.tfvars -out=tfplan && terraform apply tfplan
@@ -222,6 +223,11 @@ a new image, and a stage 2 apply with the new digest (§6.6.2).
   rewrite it.
 - Change task 2.5 has the owner create `tf-deployer` and `tf-deployer-plan`; §6.6.1 has stage 1
   create them. `manage_deployer_service_accounts` supports both.
+- `tf-deployer` and `tf-deployer-plan` get `roles/storage.bucketViewer` on the state bucket
+  (bucket metadata for the gcs backend and `gcloud storage`); §6.8 lists managed-folder grants
+  only.
+- `cicd_project_id` must be set (the contracts allow `null`, the hub-as-CI/CD layout); phase 1
+  uses the dedicated `pltfrm-ngnrng`.
 - Only `single_deployer = true`, `create_projects = false` and `github_owner_type = "user"` are
   drafted; guards fail the plan otherwise.
 

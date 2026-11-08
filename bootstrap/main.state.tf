@@ -96,6 +96,8 @@ locals {
   )
 }
 
+# Nested managed folders (outputs/ and outputs/<repo>/<env>/) are allowed in a bucket without
+# hierarchical namespace. VERIFY IN BUILD (estate): creation order does not matter.
 resource "google_storage_managed_folder" "folder" {
   for_each = local.managed_folders
 
@@ -111,4 +113,17 @@ resource "google_storage_managed_folder_iam_member" "grant" {
   managed_folder = google_storage_managed_folder.folder[each.value.folder].name
   role           = each.value.role
   member         = each.value.member
+}
+
+# The gcs backend and `gcloud storage cp` read the bucket's metadata (storage.buckets.get), which
+# managed-folder roles do not grant. roles/storage.bucketViewer holds storage.buckets.get and
+# .list only: no object list or read outside the managed folders above.
+# VERIFY IN BUILD (VA-85): init, plan (-lock=false) and apply work with these grants only,
+# including object listing with a prefix inside a managed folder. VERIFY IN BUILD (VA-99): role name.
+resource "google_storage_bucket_iam_member" "bucket_viewer" {
+  for_each = { apply = local.deployer_email, plan = local.deployer_plan_email }
+
+  bucket = google_storage_bucket.tfstate.name
+  role   = "roles/storage.bucketViewer"
+  member = "serviceAccount:${each.value}"
 }
