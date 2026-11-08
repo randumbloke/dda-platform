@@ -16,8 +16,8 @@
 
 locals {
   ar_host       = "${local.home_region}-docker.pkg.dev"
-  gate_image    = local.stage2 ? "${local.ar_host}/${local.cicd}/dda-ci/merge-gate@${var.merge_gate_image_digest}" : ""
-  runner_image  = local.stage2 ? "${local.ar_host}/${local.cicd}/dda-ci/terraform-runner@${var.runner_image_digest}" : ""
+  gate_image    = local.stage2 && var.merge_gate_image_digest != null ? "${local.ar_host}/${local.cicd}/dda-ci/merge-gate@${var.merge_gate_image_digest}" : ""
+  runner_image  = local.stage2 && var.runner_image_digest != null ? "${local.ar_host}/${local.cicd}/dda-ci/terraform-runner@${var.runner_image_digest}" : ""
   cp_registry   = "${local.ar_host}/${local.cicd}/dda-control-plane"
   ignored_files = ["**/*.md", ".github/workflows/**"]
 

@@ -41,7 +41,7 @@ resource "google_artifact_registry_repository" "dda_control_plane" {
 
 # Builds pull the gate and runner images as the build's service account.
 resource "google_artifact_registry_repository_iam_member" "dda_ci_reader" {
-  for_each = toset([local.deployer_email, local.deployer_plan_email])
+  for_each = { apply = local.deployer_email, plan = local.deployer_plan_email }
 
   project    = local.cicd
   location   = local.home_region

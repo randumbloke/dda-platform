@@ -128,7 +128,7 @@ resource "google_project_iam_member" "deployer_plan" {
 # CI/CD project (§6.7): build logs for every pipeline and plan account; builds.viewer for apply
 # accounts so the gate can read its build's approval. No account holds cloudbuild.builds.create.
 resource "google_project_iam_member" "cicd_log_writer" {
-  for_each = toset([local.deployer_email, local.deployer_plan_email])
+  for_each = { apply = local.deployer_email, plan = local.deployer_plan_email }
 
   project = local.cicd
   role    = "roles/logging.logWriter"
