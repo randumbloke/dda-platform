@@ -11,7 +11,7 @@ variable "location" {
 }
 
 variable "data_domain_id" {
-  description = "dataDomainId on create, for example customer-dev or raw."
+  description = "dataDomainId on create, for example customer-dev, or customer-dev-raw for a subdomain (domain IDs are flat in the API)."
   type        = string
 
   validation {

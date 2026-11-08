@@ -135,7 +135,7 @@ data "http" "domain" {
 
   lifecycle {
     postcondition {
-      condition     = self.status_code == 200 && try(jsondecode(self.response_body).policyMember, "") != ""
+      condition     = self.status_code == 200 && try(jsondecode(self.response_body).policyMember.iamPolicyNamePrincipal, "") != "" # VERIFY IN BUILD (VA-12)
       error_message = "Could not read policyMember of data domain ${var.data_domain_id} (HTTP ${self.status_code})."
     }
   }

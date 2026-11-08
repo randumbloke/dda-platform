@@ -72,9 +72,19 @@ resource "google_project_service_identity" "this" {
   service = local.api[each.value]
 }
 
+# The emails are computed from the project number in both modes, so they are known at plan; in
+# manage mode the output waits for the generated identities.
 output "emails" {
   description = "Map of agent short name to email."
-  value = {
-    for s in var.services : s => var.manage ? coalesce(google_project_service_identity.this[s].email, local.computed[s]) : local.computed[s]
+  value       = { for s in var.services : s => local.computed[s] }
+
+  depends_on = [google_project_service_identity.this]
+}
+
+# VERIFY IN BUILD (VA-101): warns if a generated agent's email differs from the computed form.
+check "agent_email_form" {
+  assert {
+    condition     = alltrue([for s, r in google_project_service_identity.this : r.email == null || r.email == local.computed[s]])
+    error_message = "A generated service agent email differs from the computed form; update local.computed (VA-101)."
   }
 }
