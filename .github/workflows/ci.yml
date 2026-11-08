@@ -1,0 +1,127 @@
+# ci-checks (design section 6.3). One aggregate job on every pull request against main and every
+# push to main (so it also runs on the merge commit Cloud Build deploys). No Google Cloud
+# credential: no id-token, no authentication action (section 6.2). Third-party actions are pinned
+# by full commit SHA and each tool by version.
+name: ci
+
+on:
+  pull_request:
+    branches: [main]
+  push:
+    branches: [main]
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+env:
+  TERRAFORM_VERSION: "1.16.3"
+  TFLINT_VERSION: "v0.66.0"
+  GITLEAKS_VERSION: "8.30.1"
+  CHECK_JSONSCHEMA_VERSION: "0.33.0"
+  TF_IN_AUTOMATION: "1"
+  TF_PLUGIN_CACHE_DIR: ${{ github.workspace }}/.terraform.d/plugin-cache
+
+jobs:
+  ci-checks:
+    name: ci-checks
+    runs-on: ubuntu-24.04
+    timeout-minutes: 30
+    steps:
+      - name: Checkout
+        uses: actions/checkout@3d3c42e5aac5ba805825da76410c181273ba90b1 # v7.0.1
+        with:
+          fetch-depth: 0
+          persist-credentials: false
+
+      - name: Set up Terraform
+        uses: hashicorp/setup-terraform@dfe3c3f87815947d99a8997f908cb6525fc44e9e # v4.0.1
+        with:
+          terraform_version: ${{ env.TERRAFORM_VERSION }}
+          terraform_wrapper: false
+
+      - name: Set up TFLint
+        uses: terraform-linters/setup-tflint@6ffdbaa3be476b3431f7275c26966ef32ff60337 # v6.3.2
+        with:
+          tflint_version: ${{ env.TFLINT_VERSION }}
+
+      - name: Set up uv
+        uses: astral-sh/setup-uv@68559e99cc807c1eb7e9238fd43a15bba460eec2 # v10.3.3
+
+      - name: terraform fmt
+        run: terraform fmt -check -recursive -diff
+
+      - name: terraform init and validate (every root module and module)
+        run: |
+          mkdir -p "$TF_PLUGIN_CACHE_DIR"
+          status=0
+          # Root modules: committed lock file, read-only (section 6.11).
+          for d in $(find bootstrap tiers envs -name backend.tf -not -path '*/.terraform/*' -exec dirname {} \; 2>/dev/null | sort); do
+            echo "::group::root $d"
+            (cd "$d" && terraform init -backend=false -input=false -lockfile=readonly && terraform validate) || status=1
+            echo "::endgroup::"
+          done
+          # Shared modules.
+          for d in $(find modules -name '*.tf' -not -path '*/.terraform/*' -not -path '*/tests/*' -exec dirname {} \; | sort -u); do
+            echo "::group::module $d"
+            (cd "$d" && terraform init -backend=false -input=false && terraform validate) || status=1
+            echo "::endgroup::"
+          done
+          exit $status
+
+      - name: terraform test (modules with tests)
+        run: |
+          status=0
+          for d in $(find modules -name '*.tftest.hcl' -not -path '*/.terraform/*' -exec dirname {} \; | xargs -n1 dirname | sort -u); do
+            echo "::group::test $d"
+            (cd "$d" && terraform test) || status=1
+            echo "::endgroup::"
+          done
+          exit $status
+
+      - name: tflint
+        run: |
+          tflint --init --config "$GITHUB_WORKSPACE/.tflint.hcl"
+          tflint --recursive --config "$GITHUB_WORKSPACE/.tflint.hcl" --format compact
+        env:
+          GITHUB_TOKEN: ${{ github.token }}
+
+      - name: Root-module comparison
+        run: bash scripts/compare_roots.sh
+
+      - name: Policy checks (IAM ownership, dataset access, projectReaders, local execution, lock files, pins, workflows)
+        run: bash scripts/policy_checks.sh
+
+      - name: Shell syntax of the shim scripts
+        run: |
+          for f in modules/data_domain_shim/*/scripts/*.sh scripts/*.sh; do bash -n "$f"; done
+
+      - name: JSON Schema validation
+        run: |
+          uvx --from "check-jsonschema==${CHECK_JSONSCHEMA_VERSION}" check-jsonschema \
+            --schemafile scripts/schemas/labels.schema.json envs/labels.json
+
+      - name: Merge gate lint and golden-fixture tests (bootstrap/merge-gate)
+        if: hashFiles('bootstrap/merge-gate/pyproject.toml') != ''
+        working-directory: bootstrap/merge-gate
+        run: |
+          uv sync --frozen
+          uv run ruff check .
+          uv run pytest -q
+
+      - name: Secret scan (gitleaks, commits in the change)
+        run: |
+          curl -sSfL -o /tmp/gitleaks.tgz \
+            "https://github.com/gitleaks/gitleaks/releases/download/v${GITLEAKS_VERSION}/gitleaks_${GITLEAKS_VERSION}_linux_x64.tar.gz"
+          tar -xzf /tmp/gitleaks.tgz -C /tmp gitleaks
+          if [ "${{ github.event_name }}" = "pull_request" ]; then
+            range="${{ github.event.pull_request.base.sha }}..${{ github.event.pull_request.head.sha }}"
+          elif [ "${{ github.event.before }}" != "0000000000000000000000000000000000000000" ]; then
+            range="${{ github.event.before }}..${{ github.sha }}"
+          else
+            range="${{ github.sha }}"
+          fi
+          /tmp/gitleaks git --redact --no-banner --exit-code 1 --log-opts="$range" .

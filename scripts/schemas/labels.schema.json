@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "title": "envs/labels.json (design section 1.6; decision P1-7), read by modules/label_gen",
+  "type": "object",
+  "properties": {
+    "$comment": { "type": "string" },
+    "common": {
+      "type": "object",
+      "additionalProperties": { "type": "string", "pattern": "^[a-z0-9_-]{0,63}$" }
+    },
+    "roles": {
+      "type": "object",
+      "required": ["hub", "cicd", "core_data", "analytics"],
+      "additionalProperties": {
+        "type": "object",
+        "properties": {
+          "static": {
+            "type": "object",
+            "propertyNames": { "pattern": "^[a-z][a-z0-9_-]{0,62}$" },
+            "additionalProperties": { "type": "string", "pattern": "^[a-z0-9_-]{0,63}$" }
+          },
+          "keys": {
+            "type": "array",
+            "items": { "enum": ["dda-env", "dda-tier", "dda-domain"] },
+            "uniqueItems": true
+          },
+          "required": {
+            "type": "array",
+            "items": { "type": "string", "pattern": "^[a-z][a-z0-9_-]{0,62}$" },
+            "uniqueItems": true
+          }
+        },
+        "required": ["static", "keys", "required"],
+        "additionalProperties": false
+      }
+    }
+  },
+  "required": ["common", "roles"],
+  "additionalProperties": false
+}
