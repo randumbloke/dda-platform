@@ -2,7 +2,7 @@
 # Nothing sensitive: organisation ID, billing account, customer ID and the team membership
 # lists are in bootstrap.auto.tfvars (git-ignored; see bootstrap.auto.tfvars.example).
 
-stage = 1
+stage = 2
 
 prefix       = "kcdda"
 environments = ["dev"]
@@ -47,7 +47,6 @@ machine_users = {
 }
 
 # Stage 2 (after stage 1, the token versions and the image builds; README "Runbook"):
-# stage                      = 2
-# merge_gate_image_digest    = "sha256:..."
-# runner_image_digest        = "sha256:..."
-# github_app_installation_id = 12345678
+merge_gate_image_digest    = "sha256:53b12070dc3975588ff0a83b27d7907e14a87144a3084c82e2b3834940e1cd7d"
+runner_image_digest        = "sha256:70f87b67362bece2ae4b7bfffb12ebd4be87b63b8526f78abbcd37df430cc006"
+github_app_installation_id = 9757498
