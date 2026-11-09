@@ -37,6 +37,15 @@ provider "google" {
   user_project_override = true
 }
 
+provider "google" {
+  alias                       = "groups_admin"
+  project                     = var.cicd_project_id
+  region                      = local.home_region
+  billing_project             = var.cicd_project_id
+  user_project_override       = true
+  impersonate_service_account = var.groups_admin_service_account
+}
+
 provider "google-beta" {
   project               = var.cicd_project_id
   region                = local.home_region

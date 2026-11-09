@@ -284,6 +284,17 @@ variable "manage_deployer_service_accounts" {
   default     = true
 }
 
+variable "groups_admin_service_account" {
+  description = "Service account in the CI/CD project that holds the Cloud Identity Groups Admin role (§6.6, §6.15.4, P6-41). When set, bootstrap's Cloud Identity lookups and memberships impersonate it; when null, they use the applier's own credentials."
+  type        = string
+  default     = null
+
+  validation {
+    condition     = var.groups_admin_service_account == null || can(regex("^[a-z0-9-]+@[a-z0-9-]+\\.iam\\.gserviceaccount\\.com$", var.groups_admin_service_account))
+    error_message = "groups_admin_service_account must be null or a valid service account email."
+  }
+}
+
 variable "token_expiry_dates" {
   description = "Secret name => token expiry date (YYYY-MM-DD), set as label expire_time at rotation (§6.6.3)."
   type        = map(string)

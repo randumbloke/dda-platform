@@ -52,6 +52,36 @@ locals {
   # VERIFY IN BUILD (VA-101): agent email format when manage_service_identities = false.
   cloudbuild_agent = var.manage_service_identities ? google_project_service_identity.cloudbuild[0].email : "service-${data.google_project.cicd.number}@gcp-sa-cloudbuild.iam.gserviceaccount.com"
 
+  run_agent_projects = toset(concat(values(var.hub_project_ids), local.data_projects))
+}
+
+# Cloud Run API and service identities on hubs and data projects, needed before stage 1 grants
+# roles/artifactregistry.reader on dda-control-plane and dda-pipelines (verified live 2026-11-09).
+resource "google_project_service" "run_on_workload_projects" {
+  for_each = var.manage_project_services ? local.run_agent_projects : toset([])
+
+  project            = each.value
+  service            = "run.googleapis.com"
+  disable_on_destroy = false
+}
+
+resource "google_project_service_identity" "run_on_workload_projects" {
+  provider = google-beta
+  for_each = var.manage_service_identities ? local.run_agent_projects : toset([])
+
+  project = each.value
+  service = "run.googleapis.com"
+
+  depends_on = [google_project_service.run_on_workload_projects]
+}
+
+locals {
   # Cloud Run service agent of each hub: reads dda-control-plane (§6.6.1).
-  hub_run_agents = { for t, p in data.google_project.hub : t => "service-${p.number}@serverless-robot-prod.iam.gserviceaccount.com" }
+  hub_run_agents = {
+    for t, p in data.google_project.hub : t => (
+      var.manage_service_identities
+      ? google_project_service_identity.run_on_workload_projects[p.project_id].email
+      : "service-${p.number}@serverless-robot-prod.iam.gserviceaccount.com"
+    )
+  }
 }

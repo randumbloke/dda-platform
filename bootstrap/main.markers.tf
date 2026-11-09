@@ -50,7 +50,7 @@ locals {
         for m in members : { github_login = m.github_login, google_account = lower(m.google_account) }
       ]
     }
-    machine_users = [var.machine_users.scangen_bot, var.machine_users.gate_bot]
+    machine_users = distinct(compact([var.machine_users.scangen_bot, "dda-scangen-bot", var.machine_users.gate_bot, "dda-gate-bot"]))
   }
 }
 

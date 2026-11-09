@@ -3,7 +3,10 @@
 # and the phase 1 runtime service accounts (§6.17 asks table). Dry run by default.
 #
 #   bash owner/25_groups_and_service_accounts.sh                       # print what would change
-#   bash owner/25_groups_and_service_accounts.sh --apply
+#   bash owner/25_groups_and_service_accounts.sh --apply --groups-only # in Cloud Shell, as the
+#                                    # Cloud Identity admin: the groups only
+#   bash owner/25_groups_and_service_accounts.sh --apply               # as mikegyoung@google.com: the
+#                                    # service accounts (the groups are skipped for an outside caller, MB-06)
 #   bash owner/25_groups_and_service_accounts.sh --apply --with-deployers   # only if bootstrap does
 #                                    # not create tf-deployer/-plan (manage_deployer_service_accounts = false)
 #
@@ -19,7 +22,13 @@ require gcloud
 parse_mode "$@"
 
 WITH_DEPLOYERS=false
-for a in "$@"; do [ "$a" = "--with-deployers" ] && WITH_DEPLOYERS=true; done
+GROUPS_ONLY=false
+for a in "$@"; do
+  case "$a" in
+    --with-deployers) WITH_DEPLOYERS=true ;;
+    --groups-only) GROUPS_ONLY=true ;;
+  esac
+done
 
 ENV=dev
 DDA_GROUPS=(
@@ -45,13 +54,19 @@ DDA_GROUPS=(
 )
 
 echo "== groups in ${GROUP_DOMAIN}"
-for entry in "${DDA_GROUPS[@]}"; do
-  name="${entry%%|*}"; display="${entry#*|}"
-  email="${name}@${GROUP_DOMAIN}"
-  if group_exists "$email"; then skip "$email"; else
-    do_write gcloud identity groups create "$email" --organization="$ORG_DOMAIN" --display-name="$display"
-  fi
-done
+if tenant_caller "the ${#DDA_GROUPS[@]} groups"; then
+  for entry in "${DDA_GROUPS[@]}"; do
+    name="${entry%%|*}"; display="${entry#*|}"
+    email="${name}@${GROUP_DOMAIN}"
+    if group_exists "$email"; then skip "$email"; else
+      do_write gcloud identity groups create "$email" --organization="$ORG_DOMAIN" --display-name="$display"
+    fi
+  done
+fi
+if [ "$GROUPS_ONLY" = true ]; then
+  echo "== done (${MODE}, groups only)"
+  exit 0
+fi
 
 SERVICE_ACCOUNTS=(
   "evaluator-${ENV}|${HUB_PROJECT}|DDA control evaluator (${ENV})"

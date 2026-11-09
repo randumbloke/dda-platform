@@ -53,15 +53,15 @@ resource "google_logging_organization_sink" "admin_activity" {
   include_children = true
 }
 
-# A sink into a log bucket of another project needs its writer identity granted; the project
-# sink writes into its own project. VERIFY IN BUILD (estate): bucketWriter needed for the
-# same-project sink; granted to be safe.
+# An organisation sink writes across into the CI/CD project's log bucket and needs bucketWriter
+# for its writer_identity. A same-project sink (manage_org_policies = false) writes into its own
+# project's log bucket and Cloud Logging sets writer_identity = "" (verified live 2026-11-09).
 resource "google_project_iam_member" "admin_sink_writer" {
+  count = var.manage_org_policies ? 1 : 0
+
   project = local.cicd
   role    = "roles/logging.bucketWriter"
-  member = (var.manage_org_policies
-    ? google_logging_organization_sink.admin_activity[0].writer_identity
-  : google_logging_project_sink.admin_activity[0].writer_identity)
+  member  = google_logging_organization_sink.admin_activity[0].writer_identity
 }
 
 resource "google_monitoring_notification_channel" "admin_alert" {

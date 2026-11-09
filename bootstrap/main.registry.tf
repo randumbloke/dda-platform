@@ -117,5 +117,9 @@ resource "google_artifact_registry_repository_iam_member" "pipelines_run_agent" 
   location   = local.home_region
   repository = google_artifact_registry_repository.dda_pipelines.name
   role       = "roles/artifactregistry.reader"
-  member     = "serviceAccount:service-${each.value.number}@serverless-robot-prod.iam.gserviceaccount.com"
+  member = "serviceAccount:${
+    var.manage_service_identities
+    ? google_project_service_identity.run_on_workload_projects[each.key].email
+    : "service-${each.value.number}@serverless-robot-prod.iam.gserviceaccount.com"
+  }"
 }

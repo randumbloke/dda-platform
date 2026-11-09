@@ -40,6 +40,11 @@ domains = ["customer", "accounts"]
 # Change task 2.5 creates tf-deployer and tf-deployer-plan by hand; if it does, set this to
 # false (or import them) so stage 1 reads them instead of creating them.
 manage_deployer_service_accounts = true
+groups_admin_service_account     = "sa-builder@pltfrm-ngnrng.iam.gserviceaccount.com" # OD-7 (P6-41)
+machine_users = {
+  gate_bot    = "" # PoC: local randumbloke token used for merge-gate-token; no separate dda-gate-bot account
+  scangen_bot = "" # phase 3+ (scan_generator)
+}
 
 # Stage 2 (after stage 1, the token versions and the image builds; README "Runbook"):
 # stage                      = 2

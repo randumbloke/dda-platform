@@ -65,8 +65,8 @@ locals {
   # Machine users (§6.6.3): dda-gate-bot reads every repository; dda-scangen-bot writes domain
   # repositories only. In user mode both are collaborators (classic tokens, VA-103).
   machine_collaborators = merge(
-    { for r in local.repositories : "${r}|${var.machine_users.gate_bot}" => { repo = r, login = var.machine_users.gate_bot } },
-    { for r in keys(local.domain_repositories) : "${r}|${var.machine_users.scangen_bot}" => { repo = r, login = var.machine_users.scangen_bot } },
+    var.machine_users.gate_bot != "" ? { for r in local.repositories : "${r}|${var.machine_users.gate_bot}" => { repo = r, login = var.machine_users.gate_bot } } : {},
+    var.machine_users.scangen_bot != "" ? { for r in keys(local.domain_repositories) : "${r}|${var.machine_users.scangen_bot}" => { repo = r, login = var.machine_users.scangen_bot } } : {},
   )
 
   person_collaborators = merge([
@@ -159,6 +159,7 @@ locals {
 }
 
 data "google_cloud_identity_group_lookup" "group" {
+  provider = google.groups_admin
   for_each = var.manage_group_memberships ? { for g in keys(var.approval_groups) : g => g if g != "dda-bootstrap-admins" } : {}
 
   group_key {
@@ -167,6 +168,7 @@ data "google_cloud_identity_group_lookup" "group" {
 }
 
 resource "google_cloud_identity_group_membership" "member" {
+  provider = google.groups_admin
   for_each = local.group_members
 
   group = data.google_cloud_identity_group_lookup.group[each.value.group].name

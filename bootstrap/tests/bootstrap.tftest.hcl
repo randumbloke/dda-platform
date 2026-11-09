@@ -20,6 +20,10 @@ mock_provider "google" {
   }
 }
 
+mock_provider "google" {
+  alias = "groups_admin"
+}
+
 mock_provider "google-beta" {
   mock_resource "google_project_service_identity" {
     defaults = {
