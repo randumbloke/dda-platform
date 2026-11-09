@@ -49,8 +49,10 @@ resource "google_project_service_identity" "cloudbuild" {
 }
 
 locals {
-  # VERIFY IN BUILD (VA-101): agent email format when manage_service_identities = false.
-  cloudbuild_agent = var.manage_service_identities ? google_project_service_identity.cloudbuild[0].email : "service-${data.google_project.cicd.number}@gcp-sa-cloudbuild.iam.gserviceaccount.com"
+  # VERIFY IN BUILD (VA-93, VA-101): google_project_service_identity for cloudbuild.googleapis.com
+  # generates both <number>@cloudbuild.gserviceaccount.com (returned in .email) and the P4SA
+  # service-<number>@gcp-sa-cloudbuild.iam.gserviceaccount.com, which 2nd-gen connections use.
+  cloudbuild_agent = "service-${data.google_project.cicd.number}@gcp-sa-cloudbuild.iam.gserviceaccount.com"
 
   run_agent_projects = toset(concat(values(var.hub_project_ids), local.data_projects))
 }

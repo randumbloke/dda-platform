@@ -59,6 +59,8 @@ resource "google_secret_manager_secret_iam_member" "accessor" {
   secret_id = google_secret_manager_secret.secret[each.value.secret].secret_id
   role      = "roles/secretmanager.secretAccessor"
   member    = each.value.member
+
+  depends_on = [google_project_service_identity.cloudbuild]
 }
 
 # The scan generator token secret lives in the production hub (scangen-prod, §2.4.1). Phase 1
