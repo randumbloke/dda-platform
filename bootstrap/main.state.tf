@@ -127,3 +127,37 @@ resource "google_storage_bucket_iam_member" "bucket_viewer" {
   role   = "roles/storage.bucketViewer"
   member = "serviceAccount:${each.value}"
 }
+
+locals {
+  stack_state_objects = merge([
+    for r, stacks in local.apply_stacks : {
+      for s in stacks :
+      "terraform/state/${r}/${replace(s.dir, "envs/", "")}/default.tfstate" => "${r}/${s.dir}"
+    }
+  ]...)
+}
+
+# Seed an empty v4 state object per stack (ignoring later changes) so a pull-request plan by the
+# read-only plan account works even before the stack's first apply: without an existing
+# default.tfstate, `terraform init` attempts to lock and write an initial state (VA-85, MB-13).
+resource "google_storage_bucket_object" "initial_state" {
+  for_each = local.stack_state_objects
+
+  bucket       = google_storage_bucket.tfstate.name
+  name         = each.key
+  content_type = "application/json"
+  content = jsonencode({
+    version           = 4
+    terraform_version = "1.17.1"
+    serial            = 0
+    lineage           = "00000000-0000-0000-0000-000000000001"
+    outputs           = {}
+    resources         = []
+  })
+
+  lifecycle {
+    ignore_changes = [content]
+  }
+
+  depends_on = [google_storage_managed_folder.folder]
+}
