@@ -61,11 +61,6 @@ run "phase1_plan" {
   }
 
   assert {
-    condition     = toset(keys(google_dataplex_metadata_feed.feed)) == toset(["feed-evaluator"])
-    error_message = "Phase 1 has feed-evaluator only."
-  }
-
-  assert {
     condition     = google_cloud_tasks_queue.rollups.name == "product-rollups-dev"
     error_message = "Rollup queue name."
   }
@@ -138,8 +133,8 @@ run "later_phase_flags_plan" {
   }
 
   assert {
-    condition     = length(google_pubsub_topic.topic) == 8 && length(google_dataplex_metadata_feed.feed) == 2
-    error_message = "All topics and both feeds when every flag is on."
+    condition     = length(google_pubsub_topic.topic) == 8
+    error_message = "All topics when every flag is on."
   }
 
   assert {

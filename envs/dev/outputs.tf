@@ -8,11 +8,6 @@ output "topics" {
   value       = local.published.topics
 }
 
-output "metadata_feeds" {
-  description = "Metadata feed names by logical name."
-  value       = local.published.metadata_feeds
-}
-
 output "landing_buckets" {
   description = "Landing bucket names by business."
   value       = local.published.landing_buckets

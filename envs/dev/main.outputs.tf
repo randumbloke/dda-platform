@@ -22,7 +22,6 @@ locals {
       { for t, r in google_pubsub_topic.topic : t => r.id },
       { for t, r in google_pubsub_topic.dead_letter : "${t}-dlq" => r.id },
     )
-    metadata_feeds = { for f, _ in local.feeds : f => "projects/${local.hub_project_id}/locations/${local.feed_location}/metadataFeeds/${module.ids.metadata_feeds[f]}" }
     # Created by the platform team (section 2.4; task 2.5), not by this stack.
     domain_service_accounts = module.ids.domain_service_accounts
   }
@@ -34,5 +33,5 @@ resource "google_storage_bucket_object" "outputs" {
   content_type = "application/json"
   content      = jsonencode(local.published)
 
-  depends_on = [google_dataplex_metadata_feed.feed]
+  depends_on = [google_pubsub_topic.topic, google_storage_bucket.landing]
 }
