@@ -52,8 +52,6 @@ locals {
   analytics_project_businesses = {
     for p in local.data_project_ids : p => [for b in local.businesses : b if local.analytics_project_ids[b] == p]
   }
-
-  feed_location = coalesce(var.metadata_feed_location, local.home_region)
 }
 
 module "ids" {

@@ -40,12 +40,12 @@ locals {
     # tf-platform (hub)
     "roles/pubsub.admin",
     "roles/cloudtasks.admin",
-    "roles/dataplex.metadataFeedOwner",
     "roles/logging.admin",
     "roles/monitoring.editor",
     # tf-governance (hub)
     "roles/dataplex.dataDomainAdmin",
     "roles/dataplex.catalogAdmin",
+    "roles/dataplex.metadataFeedOwner",
     "roles/datacatalog.categoryAdmin",
     "roles/dlp.inspectTemplatesEditor",
     "roles/bigquery.admin",

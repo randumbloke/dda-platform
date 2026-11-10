@@ -62,12 +62,6 @@ variable "audit_log_retention_days" {
   default     = 400
 }
 
-variable "metadata_feed_location" {
-  description = "Location of the metadata feeds; null = the home region (design section 6.16.3, until VA-59 says otherwise)."
-  type        = string
-  default     = null
-}
-
 variable "notification_channels" {
   description = "Cloud Monitoring notification channel names for the governance engineers' alerts (design section 5.8). Empty: alerts are recorded with no notification."
   type        = list(string)
