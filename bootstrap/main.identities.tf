@@ -56,16 +56,18 @@ locals {
     "roles/iam.serviceAccountUser",
   ]
   deployer_roles_core = [
-    "roles/storage.admin",          # tf-platform: landing buckets
-    "roles/bigquery.user",          # tf-<business>: create datasets (creator is owner)
-    "roles/dataplex.dataScanAdmin", # tf-<business>: scans
-    "roles/dlp.admin",              # tf-governance: discovery configuration
-    "roles/logging.configWriter",   # tf-platform: audit-log sinks (project scope; no folders)
+    "roles/storage.admin",              # tf-platform: landing buckets
+    "roles/bigquery.user",              # tf-<business>: create datasets (creator is owner)
+    "roles/dataplex.dataScanAdmin",     # tf-<business>: scans
+    "roles/dataplex.entryGroupExporter", # tf-governance: metadata feed scope.projects
+    "roles/dlp.admin",                  # tf-governance: discovery configuration
+    "roles/logging.configWriter",       # tf-platform: audit-log sinks (project scope; no folders)
   ]
   deployer_roles_analytics = [
     "roles/bigquery.admin",
     "roles/dataplex.dataProductsAdmin",
     "roles/dataplex.dataScanAdmin",
+    "roles/dataplex.entryGroupExporter", # tf-governance: metadata feed scope.projects
     "roles/dlp.admin",
     "roles/logging.configWriter",
   ]

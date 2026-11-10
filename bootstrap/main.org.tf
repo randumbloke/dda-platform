@@ -55,14 +55,16 @@ locals {
       }
       ddaDomainDelegate = {
         title       = "DDA domain delegate"
-        description = "Granted to a domain's policyMember on a dataset or product so it can be bound; no data access (§2.3.1). VERIFY IN BUILD (VA-49)."
+        description = "Granted to a domain's policyMember on a dataset or product so it can be bound; no data access (§2.3.1). Binding needs admin, write and read together (VA-49, OD-9)."
         permissions = [
           "bigquery.datasets.get",
           "bigquery.datasets.getIamPolicy",
           "bigquery.datasets.setIamPolicy",
+          "bigquery.datasets.updateTag",
           "dataplex.dataProducts.get",
           "dataplex.dataProducts.getIamPolicy",
           "dataplex.dataProducts.setIamPolicy",
+          "dataplex.dataProducts.update",
         ]
       }
       ddaDomainBinder = {
