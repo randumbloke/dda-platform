@@ -159,7 +159,10 @@ resource "google_storage_bucket_object" "initial_state" {
   })
 
   lifecycle {
-    ignore_changes = [content]
+    # Create once, then never touch: the gcs backend rewrites the object (new content, md5 and
+    # content_type text/plain). content_type forces replacement and detect_md5hash forces a
+    # re-upload, and either would overwrite live state with this empty seed (MB-25).
+    ignore_changes = all
   }
 
   depends_on = [google_storage_managed_folder.folder]
