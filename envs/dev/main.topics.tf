@@ -81,6 +81,17 @@ resource "google_pubsub_topic_iam_member" "publisher" {
   member  = each.value.member
 }
 
+# Dataplex metadataFeeds.create checks both pubsub.topics.publish and pubsub.topics.get on the
+# feed topic for the hub Dataplex service agent (verified live 2026-11-10, VA-09).
+resource "google_pubsub_topic_iam_member" "feed_topic_viewer" {
+  for_each = { for t, name in local.topics : t => name if contains(["kc-evaluator", "kc-classifier"], t) }
+
+  project = local.hub_project_id
+  topic   = google_pubsub_topic.topic[each.key].name
+  role    = "roles/pubsub.viewer"
+  member  = "serviceAccount:${local.hub_agents["dataplex"]}"
+}
+
 # The hub Pub/Sub service agent forwards undeliverable messages to the dead-letter topic.
 # (Its subscriber grant on each subscription is cdmc-governance's.)
 resource "google_pubsub_topic_iam_member" "dead_letter_publisher" {
