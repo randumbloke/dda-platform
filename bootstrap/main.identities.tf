@@ -166,3 +166,115 @@ resource "google_project_iam_member" "platform_engineers" {
   role    = each.value
   member  = "group:${local.group["dda-platform-engineers"]}"
 }
+
+# Workload service account grants owned by the platform team / bootstrap (§2.4.1–2.4.3, §6.15.1).
+locals {
+  evaluator_hub_roles = [
+    "roles/bigquery.jobUser",
+    "roles/dataplex.catalogViewer",
+    "roles/dataplex.dataDomainViewer",
+    "roles/eventarc.eventReceiver",
+  ]
+  evaluator_data_roles = [
+    "roles/dataplex.catalogViewer",
+    "roles/bigquery.metadataViewer",
+    "roles/dataplex.dataScanViewer",
+    "roles/datalineage.viewer",
+    "roles/iam.securityReviewer",
+  ]
+  workload_project_grants = merge(
+    # evaluator-<env> on its tier's hub project
+    merge([
+      for e in local.nonprod_envs : {
+        for r in local.evaluator_hub_roles :
+        "eval-hub|${e}|${r}" => {
+          project = var.hub_project_ids["nonprod"]
+          role    = r
+          member  = "serviceAccount:evaluator-${e}@${var.hub_project_ids["nonprod"]}.iam.gserviceaccount.com"
+        }
+      }
+    ]...),
+    # evaluator-<env> on all data projects of <env>
+    merge([
+      for e in local.nonprod_envs : {
+        for pair in setproduct(
+          distinct(concat([var.core_data_project_ids[e]], values(var.domain_analytics_project_ids[e]))),
+          local.evaluator_data_roles,
+        ) :
+        "eval-data|${e}|${pair[0]}|${pair[1]}" => {
+          project = pair[0]
+          role    = pair[1]
+          member  = "serviceAccount:evaluator-${e}@${var.hub_project_ids["nonprod"]}.iam.gserviceaccount.com"
+        }
+      }
+    ]...),
+    # evaluator-<env> roles/dataplex.dataProductsViewer on analytics projects of <env>
+    merge([
+      for e in local.nonprod_envs : {
+        for p in distinct(values(var.domain_analytics_project_ids[e])) :
+        "eval-dp|${e}|${p}" => {
+          project = p
+          role    = "roles/dataplex.dataProductsViewer"
+          member  = "serviceAccount:evaluator-${e}@${var.hub_project_ids["nonprod"]}.iam.gserviceaccount.com"
+        }
+      }
+    ]...),
+    # <business>-ingest-<env> roles/bigquery.jobUser on the core data project (§2.4.2)
+    merge([
+      for e in local.nonprod_envs : {
+        for d in var.domains :
+        "ingest-job|${e}|${d}" => {
+          project = var.core_data_project_ids[e]
+          role    = "roles/bigquery.jobUser"
+          member  = "serviceAccount:${d}-ingest-${e}@${var.core_data_project_ids[e]}.iam.gserviceaccount.com"
+        }
+      }
+    ]...),
+    # <business>-analytics-<env> roles/bigquery.jobUser on the domain's analytics project (§2.4.3)
+    merge([
+      for e in local.nonprod_envs : {
+        for d in var.domains :
+        "analytics-job|${e}|${d}" => {
+          project = var.domain_analytics_project_ids[e][d]
+          role    = "roles/bigquery.jobUser"
+          member  = "serviceAccount:${d}-analytics-${e}@${var.domain_analytics_project_ids[e][d]}.iam.gserviceaccount.com"
+        }
+      }
+    ]...),
+  )
+
+  workload_custom_grants = merge([
+    for e in local.nonprod_envs : {
+      for p in distinct(concat([var.core_data_project_ids[e]], values(var.domain_analytics_project_ids[e]))) :
+      "eval-aspect|${e}|${p}" => {
+        project = p
+        role    = "ddaAspectWriter"
+        member  = "serviceAccount:evaluator-${e}@${var.hub_project_ids["nonprod"]}.iam.gserviceaccount.com"
+      }
+    }
+  ]...)
+}
+
+resource "google_project_iam_member" "workload" {
+  for_each = local.workload_project_grants
+
+  project = each.value.project
+  role    = each.value.role
+  member  = each.value.member
+}
+
+resource "google_project_iam_member" "workload_custom" {
+  for_each = local.workload_custom_grants
+
+  project = each.value.project
+  role    = local.custom_role[each.value.role]
+  member  = each.value.member
+}
+
+resource "google_service_account_iam_member" "evaluator_self_user" {
+  for_each = toset(local.nonprod_envs)
+
+  service_account_id = "projects/${var.hub_project_ids["nonprod"]}/serviceAccounts/evaluator-${each.value}@${var.hub_project_ids["nonprod"]}.iam.gserviceaccount.com"
+  role               = "roles/iam.serviceAccountUser"
+  member             = "serviceAccount:evaluator-${each.value}@${var.hub_project_ids["nonprod"]}.iam.gserviceaccount.com"
+}
