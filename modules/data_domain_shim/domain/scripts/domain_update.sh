@@ -20,7 +20,7 @@ existing="$HTTP_BODY"
 changed=()
 for field in displayName description contacts labels; do
   case "$field" in
-    contacts) filter='(.contacts // []) | map({role: (.role // ""), identity: (.identity // "")}) | sort_by(.role, .identity)' ;;
+    contacts) filter='(((.contacts.identities // []) | map({contactRole: (.contactRole // ""), contactName: (.contactName // ""), contactId: (.contactId // "")})) | sort_by(.contactRole, .contactId))' ;;
     labels) filter='(.labels // {})' ;;
     *) filter="(.${field} // \"\")" ;;
   esac

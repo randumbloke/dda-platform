@@ -14,7 +14,7 @@ source "$(dirname "$0")/lib.sh"
 domain_url="$DATAPLEX_API/projects/$PROJECT/locations/$LOCATION/dataDomains/$DATA_DOMAIN_ID"
 
 for attempt in 1 2 3; do
-  api POST "$domain_url:getIamPolicy" '{}'
+  api GET "$domain_url:getIamPolicy"
   require_2xx "getIamPolicy $DATA_DOMAIN_ID"
   etag="$(jq -r '.etag // empty' <<<"$HTTP_BODY")"
 

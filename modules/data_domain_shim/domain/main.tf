@@ -21,11 +21,19 @@
  */
 
 locals {
+  contacts_payload = {
+    identities = [for c in var.contacts : {
+      contactRole = c.role
+      contactName = c.identity
+      contactId   = c.identity
+    }]
+  }
+
   domain_body = merge(
     {
       displayName = var.display_name
       description = var.description == null ? "" : var.description
-      contacts    = [for c in var.contacts : { role = c.role, identity = c.identity }]
+      contacts    = local.contacts_payload
       labels      = var.labels
     },
     var.parent_data_domain == null ? {} : { parentDataDomain = var.parent_data_domain },
@@ -34,7 +42,7 @@ locals {
   mutable_body = {
     displayName = var.display_name
     description = var.description == null ? "" : var.description
-    contacts    = [for c in var.contacts : { role = c.role, identity = c.identity }]
+    contacts    = local.contacts_payload
     labels      = var.labels
   }
 
