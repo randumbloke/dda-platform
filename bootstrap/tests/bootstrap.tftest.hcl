@@ -306,7 +306,7 @@ run "stage_2" {
   }
 
   assert {
-    condition     = length(google_storage_bucket_object.first_marker) == 5 && length(google_storage_bucket_object.identities) == 1
+    condition     = length(google_storage_bucket_object.first_marker) == 7 && length(google_storage_bucket_object.identities) == 1
     error_message = "Stage 2 writes first markers and identities.json."
   }
 

@@ -17,7 +17,8 @@ data "github_branch" "main" {
 locals {
   first_markers = local.stage2 ? merge(
     { for pair in setproduct(local.terraform_repositories, local.nonprod_envs) : "${pair[0]}/${pair[1]}" => { repo = pair[0], env = pair[1] } },
-    { "kc-control-plane/image" = { repo = "kc-control-plane", env = "image" } },
+    # One first image marker per image build: kc-control-plane and each domain pipeline (P6-43).
+    { for r in keys(local.image_builds) : "${r}/image" => { repo = r, env = "image" } },
   ) : {}
 }
 
