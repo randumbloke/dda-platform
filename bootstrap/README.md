@@ -45,7 +45,7 @@ resource plus the connection, linked repositories, triggers, first markers and
 | Stage | Set | Creates |
 |---|---|---|
 | 1 | `stage = 1` (default) | Custom roles; admin-activity sink, bucket and alert; state bucket and managed folders; `bootstrap/estate.json`; `dda-ci`, `dda-control-plane`; `tf-deployer`, `tf-deployer-plan` and grants; secrets (no versions) and accessor grants; the five GitHub repositories, collaborators and rulesets; Google group memberships |
-| 2 | `stage = 2`, `merge_gate_image_digest`, `runner_image_digest`, `github_app_installation_id` | Host connection and linked repositories; 14 triggers (plan and apply for `dda-platform`, `cdmc-governance`, `dda-customer`, `dda-accounts`; `kc-control-plane-image`; a gate override per repository); first markers; `bootstrap/identities.json` |
+| 2 | `stage = 2`, `merge_gate_image_digest`, `runner_image_digest`, `github_app_installation_id` | Host connection and linked repositories; 16 triggers (plan and apply for `dda-platform`, `cdmc-governance`, `dda-customer`, `dda-accounts`; `kc-control-plane-image`, `dda-customer-image`, `dda-accounts-image` (P6-43); a gate override per repository); approver manager memberships from `access_group_managers` (P6-42); first markers; `bootstrap/identities.json` |
 
 Phase 1 declares `dev` only, so there are no `-plan-prod` or `-promote-*` triggers and no
 promotion topics (§6.9).
