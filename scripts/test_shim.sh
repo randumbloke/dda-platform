@@ -47,7 +47,7 @@ chmod +x "$work/bin/curl"
 
 export PATH="$work/bin:$PATH" STUB_DIR="$work" POLL_INTERVAL_SECONDS=0 POLL_TIMEOUT_SECONDS=5
 export PROJECT=hub LOCATION=australia-southeast1 DATA_DOMAIN_ID=customer-dev
-DOMAIN_BODY='{"displayName":"Customer (dev)","description":"","contacts":[{"role":"owner","identity":"group:o@x"}],"labels":{"dda-env":"dev"}}'
+DOMAIN_BODY='{"displayName":"Customer (dev)","description":"","contacts":{"identities":[{"contactRole":"owner","contactName":"group:o@x","contactId":"group:o@x"}]},"labels":{"dda-env":"dev"}}'
 export DOMAIN_BODY
 
 pass=0 failed=0
@@ -81,11 +81,11 @@ POLL_TIMEOUT_SECONDS=0 scenario "create fails when the operation has no result i
 
 scenario "create 409 with a matching domain succeeds" 0 "$dom/domain_create.sh" \
   "POST${T}dataDomains?dataDomainId${T}409${T}{\"error\":{\"code\":409}}" \
-  "GET${T}dataDomains/customer-dev${T}200${T}{\"name\":\"projects/123/locations/australia-southeast1/dataDomains/customer-dev\",\"displayName\":\"Customer (dev)\",\"contacts\":[{\"role\":\"owner\",\"identity\":\"group:o@x\"}],\"labels\":{\"dda-env\":\"dev\"},\"policyMember\":{}}"
+  "GET${T}dataDomains/customer-dev${T}200${T}{\"name\":\"projects/123/locations/australia-southeast1/dataDomains/customer-dev\",\"displayName\":\"Customer (dev)\",\"contacts\":{\"identities\":[{\"contactRole\":\"owner\",\"contactName\":\"group:o@x\",\"contactId\":\"group:o@x\"}]},\"labels\":{\"dda-env\":\"dev\"},\"policyMember\":{}}"
 
 scenario "create 409 with a different domain fails" 1 "$dom/domain_create.sh" \
   "POST${T}dataDomains?dataDomainId${T}409${T}{}" \
-  "GET${T}dataDomains/customer-dev${T}200${T}{\"displayName\":\"Other\",\"contacts\":[],\"labels\":{}}"
+  "GET${T}dataDomains/customer-dev${T}200${T}{\"displayName\":\"Other\",\"contacts\":{\"identities\":[]},\"labels\":{}}"
 
 scenario "create fails on 403" 1 "$dom/domain_create.sh" \
   "POST${T}dataDomains?dataDomainId${T}403${T}{\"error\":{\"code\":403}}"
@@ -107,7 +107,7 @@ scenario "delete refuses a domain that is not the declared one" 1 "$dom/domain_d
 if grep -q '^DELETE' "$work/calls"; then echo "FAIL a DELETE was sent"; failed=$((failed + 1)); else echo "pass no DELETE sent"; pass=$((pass + 1)); fi
 
 scenario "update patches only the changed field" 0 "$dom/domain_update.sh" \
-  "GET${T}dataDomains/customer-dev${T}200${T}{\"displayName\":\"Customer (dev)\",\"contacts\":[{\"role\":\"owner\",\"identity\":\"group:o@x\"}],\"labels\":{\"dda-env\":\"old\"}}" \
+  "GET${T}dataDomains/customer-dev${T}200${T}{\"displayName\":\"Customer (dev)\",\"contacts\":{\"identities\":[{\"contactRole\":\"owner\",\"contactName\":\"group:o@x\",\"contactId\":\"group:o@x\"}]},\"labels\":{\"dda-env\":\"old\"}}" \
   "PATCH${T}updateMask=labels${T}200${T}{\"name\":\"$OP\",\"done\":true}"
 if grep -q $'^PATCH\t.*updateMask=labels\t{"labels":{"dda-env":"dev"}}$' "$work/calls"; then
   echo "pass update body holds only labels"; pass=$((pass + 1))
@@ -116,19 +116,19 @@ else
 fi
 
 scenario "update with no change sends no PATCH" 0 "$dom/domain_update.sh" \
-  "GET${T}dataDomains/customer-dev${T}200${T}{\"displayName\":\"Customer (dev)\",\"description\":\"\",\"contacts\":[{\"role\":\"owner\",\"identity\":\"group:o@x\"}],\"labels\":{\"dda-env\":\"dev\"}}"
+  "GET${T}dataDomains/customer-dev${T}200${T}{\"displayName\":\"Customer (dev)\",\"description\":\"\",\"contacts\":{\"identities\":[{\"contactRole\":\"owner\",\"contactName\":\"group:o@x\",\"contactId\":\"group:o@x\"}]},\"labels\":{\"dda-env\":\"dev\"}}"
 if grep -q '^PATCH' "$work/calls"; then echo "FAIL no-change update sent a PATCH"; failed=$((failed + 1)); else echo "pass no PATCH sent"; pass=$((pass + 1)); fi
 
 export IAM_BINDINGS='[{"role":"roles/dataplex.dataDomainViewer","members":["group:v@x"]}]'
 scenario "IAM set with the etag" 0 "$dom/domain_iam.sh" \
-  "POST${T}:getIamPolicy${T}200${T}{\"etag\":\"BwE=\",\"bindings\":[]}" \
+  "GET${T}:getIamPolicy${T}200${T}{\"etag\":\"BwE=\",\"bindings\":[]}" \
   "POST${T}:setIamPolicy${T}200${T}{}"
 if grep -q '"etag":"BwE="' "$work/calls"; then echo "pass setIamPolicy carries the etag"; pass=$((pass + 1)); else echo "FAIL etag"; failed=$((failed + 1)); fi
 
 scenario "IAM retries an etag conflict" 0 "$dom/domain_iam.sh" \
-  "POST${T}:getIamPolicy${T}200${T}{\"etag\":\"A\"}" \
+  "GET${T}:getIamPolicy${T}200${T}{\"etag\":\"A\"}" \
   "POST${T}:setIamPolicy${T}409${T}{}" \
-  "POST${T}:getIamPolicy${T}200${T}{\"etag\":\"B\"}" \
+  "GET${T}:getIamPolicy${T}200${T}{\"etag\":\"B\"}" \
   "POST${T}:setIamPolicy${T}200${T}{}"
 
 export DOMAIN_NAME="projects/hub/locations/australia-southeast1/dataDomains/customer-dev-curated"

@@ -12,5 +12,10 @@ while read -r NAME REPOSITORY DIGEST; do
   mv /workspace/images.tmp /workspace/images.json
 done < /workspace/digests.txt
 cat /workspace/images.json
-gcloud storage cp /workspace/images.json "gs://${bucket}/outputs/kc-control-plane/images.json" \
-  --content-type=application/json
+TOKEN=$$(curl -fsS -H "Metadata-Flavor: Google" "http://metadata.google.internal/computeMetadata/v1/instance/service-accounts/default/token" | jq -r .access_token)
+curl -fsS -X POST \
+  -H "Authorization: Bearer $$TOKEN" \
+  -H "Content-Type: application/json" \
+  --data-binary @/workspace/images.json \
+  "https://storage.googleapis.com/upload/storage/v1/b/${bucket}/o?uploadType=media&name=outputs%2Fkc-control-plane%2Fimages.json" > /dev/null
+

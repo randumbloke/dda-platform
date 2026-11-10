@@ -16,7 +16,7 @@ domain_url="$parent_url/dataDomains/$DATA_DOMAIN_ID"
 normalise='{
   displayName: (.displayName // ""),
   description: (.description // ""),
-  contacts: ((.contacts // []) | map({role: (.role // ""), identity: (.identity // "")}) | sort_by(.role, .identity)),
+  contacts: (((.contacts.identities // []) | map({contactRole: (.contactRole // ""), contactName: (.contactName // ""), contactId: (.contactId // "")})) | sort_by(.contactRole, .contactId)),
   labels: (.labels // {}),
   parent: ((.parentDataDomain // "") | sub("^.*/(?<t>locations/.*)$"; "\(.t)"))
 }'
