@@ -184,3 +184,48 @@ resource "google_cloud_identity_group_membership" "member" {
   # An account outside the organisation (for example the owner's google.com account) needs the
   # group to allow outside members (OD-2).
 }
+
+# --------------------------------------------------------------------------------------------
+# Approvers as managers of product access groups (OD-11, P6-42; design §3.2, §6.15). Console
+# approval adds the member with the approver's own Cloud Identity rights, and Cloud Identity
+# refuses a group as MANAGER (Error 4012), so each person in the owners group is named here.
+# MANAGER needs MEMBER, so approvers read the product's data. Other members of these groups
+# belong to the gate, the reconciler and console approval; Terraform never declares them.
+# VERIFY IN BUILD (VA-112): an account outside the tenant can approve as a manager.
+# --------------------------------------------------------------------------------------------
+
+locals {
+  access_group_managers = merge([
+    for g, accounts in var.access_group_managers : {
+      for a in accounts : "${g}|${lower(a)}" => { group = g, account = lower(a) }
+    }
+  ]...)
+}
+
+data "google_cloud_identity_group_lookup" "access_group" {
+  provider = google.groups_admin
+  for_each = toset(keys(var.access_group_managers))
+
+  group_key {
+    id = "${each.key}@${var.group_domain}"
+  }
+}
+
+resource "google_cloud_identity_group_membership" "access_group_manager" {
+  provider = google.groups_admin
+  for_each = local.access_group_managers
+
+  group = data.google_cloud_identity_group_lookup.access_group[each.value.group].name
+
+  preferred_member_key {
+    id = each.value.account
+  }
+
+  roles {
+    name = "MEMBER"
+  }
+
+  roles {
+    name = "MANAGER"
+  }
+}

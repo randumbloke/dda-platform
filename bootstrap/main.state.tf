@@ -57,10 +57,13 @@ locals {
     { for pair in setproduct(local.terraform_repositories, local.nonprod_envs) : "outputs/${pair[0]}/${pair[1]}/" => { kind = "output", repo = pair[0] } },
     { for p in local.tier_pairs : "outputs/${p.repo}/${p.dir}/" => { kind = "output", repo = p.repo } },
     { "outputs/kc-control-plane/" = { kind = "output", repo = "kc-control-plane" } },
+    # Domain pipeline image digests: outputs/dda-<business>/images.json (P6-43).
+    { for r in keys(local.domain_repositories) : "outputs/${r}/" => { kind = "output", repo = r } },
   )
   marker_folders = merge(
     { for pair in setproduct(local.terraform_repositories, local.nonprod_envs) : "promotions/${pair[0]}/${pair[1]}/" => { kind = "marker", repo = pair[0] } },
     { "promotions/kc-control-plane/image/" = { kind = "marker", repo = "kc-control-plane" } },
+    { for r in keys(local.domain_repositories) : "promotions/${r}/image/" => { kind = "marker", repo = r } },
   )
 
   managed_folders = merge(
@@ -156,7 +159,10 @@ resource "google_storage_bucket_object" "initial_state" {
   })
 
   lifecycle {
-    ignore_changes = [content]
+    # Create once, then never touch: the gcs backend rewrites the object (new content, md5 and
+    # content_type text/plain). content_type forces replacement and detect_md5hash forces a
+    # re-upload, and either would overwrite live state with this empty seed (MB-25).
+    ignore_changes = all
   }
 
   depends_on = [google_storage_managed_folder.folder]

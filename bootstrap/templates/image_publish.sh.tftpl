@@ -1,5 +1,5 @@
 set -euo pipefail
-# Image variant, part 2 in the runner image: publish outputs/kc-control-plane/images.json
+# Image variant, part 2 in the runner image: publish ${object}
 # (contracts: schemas/images.schema.json) and record the digests in the build log.
 echo '{"images": {}}' > /workspace/images.json
 while read -r NAME REPOSITORY DIGEST; do
@@ -17,5 +17,5 @@ curl -fsS -X POST \
   -H "Authorization: Bearer $$TOKEN" \
   -H "Content-Type: application/json" \
   --data-binary @/workspace/images.json \
-  "https://storage.googleapis.com/upload/storage/v1/b/${bucket}/o?uploadType=media&name=outputs%2Fkc-control-plane%2Fimages.json" > /dev/null
+  "https://storage.googleapis.com/upload/storage/v1/b/${bucket}/o?uploadType=media&name=${urlencode(object)}" > /dev/null
 

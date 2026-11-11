@@ -97,45 +97,66 @@ locals {
     ]
   }
 
-  image_steps = [
-    {
-      id         = "0-merge-gate"
-      name       = local.gate_image
-      entrypoint = "python"
-      args       = ["-m", "merge_gate", "check", "--mode", "image", "--repo", "kc-control-plane", "--sha", "$COMMIT_SHA", "--env", "image"]
-      env        = local.gate_env
-      secret_env = ["GATE_TOKEN"]
-    },
-    {
-      id         = "build-push"
-      name       = local.docker_builder
-      entrypoint = "bash"
-      args = ["-c", templatefile("${path.module}/templates/image_build.sh.tftpl", {
-        registry = local.cp_registry
-        images   = var.control_plane_images
-      })]
-      env        = []
-      secret_env = []
-    },
-    {
-      id         = "publish"
-      name       = local.runner_image
-      entrypoint = "bash"
-      args = ["-c", templatefile("${path.module}/templates/image_publish.sh.tftpl", {
-        bucket = google_storage_bucket.tfstate.name
-      })]
-      env        = []
-      secret_env = []
-    },
-    {
-      id         = "promote-image"
-      name       = local.gate_image
-      entrypoint = "python"
-      args       = ["-m", "merge_gate", "promote", "--repo", "kc-control-plane", "--env", "image", "--sha", "$COMMIT_SHA"]
-      env        = local.gate_env
-      secret_env = []
-    },
-  ]
+  # Image builds (§6.10): kc-control-plane images to dda-control-plane, and each domain
+  # repository's pipeline image to dda-pipelines (OD-12, P6-43). Same four steps for both.
+  image_builds = merge(
+    { "kc-control-plane" = {
+      registry = local.cp_registry
+      images   = var.control_plane_images
+      context  = "."
+      object   = "outputs/kc-control-plane/images.json"
+    } },
+    { for r, d in local.domain_repositories : r => {
+      registry = "${local.ar_host}/${local.cicd}/dda-pipelines"
+      images   = { "${d}-pipeline" = "pipelines/Dockerfile" }
+      context  = "pipelines"
+      object   = "outputs/${r}/images.json"
+    } },
+  )
+
+  image_steps = {
+    for r, b in local.image_builds : r => [
+      {
+        id         = "0-merge-gate"
+        name       = local.gate_image
+        entrypoint = "python"
+        args       = ["-m", "merge_gate", "check", "--mode", "image", "--repo", r, "--sha", "$COMMIT_SHA", "--env", "image"]
+        env        = local.gate_env
+        secret_env = ["GATE_TOKEN"]
+      },
+      {
+        id         = "build-push"
+        name       = local.docker_builder
+        entrypoint = "bash"
+        args = ["-c", templatefile("${path.module}/templates/image_build.sh.tftpl", {
+          registry = b.registry
+          images   = b.images
+          context  = b.context
+        })]
+        env        = []
+        secret_env = []
+      },
+      {
+        id         = "publish"
+        name       = local.runner_image
+        entrypoint = "bash"
+        args = ["-c", templatefile("${path.module}/templates/image_publish.sh.tftpl", {
+          bucket = google_storage_bucket.tfstate.name
+          object = b.object
+        })]
+        env        = []
+        secret_env = []
+      },
+      {
+        id         = "promote-image"
+        name       = local.gate_image
+        entrypoint = "python"
+        args       = ["-m", "merge_gate", "promote", "--repo", r, "--env", "image", "--sha", "$COMMIT_SHA"]
+        env        = local.gate_env
+        secret_env = []
+      },
+    ]
+  }
 
   override_steps = {
     for r in local.repositories : r => [{
@@ -158,15 +179,18 @@ locals {
       repo        = r, kind = "push", steps = local.apply_steps[r], sa = local.apply_account[r], approval = false, secrets = true
       description = "Merge gate, then apply ${r}: ${join(", ", [for s in local.apply_stacks[r] : s.dir])} (§6.4.5)."
     } },
-    { "kc-control-plane-image" = {
-      repo        = "kc-control-plane", kind = "push", steps = local.image_steps, sa = local.apply_account["kc-control-plane"], approval = false, secrets = true
-      description = "Merge gate, then build and push control plane images (§6.10)."
+    { for r in keys(local.image_builds) : "${r}-image" => {
+      repo        = r, kind = "push", steps = local.image_steps[r], sa = local.apply_account[r], approval = false, secrets = true
+      description = r == "kc-control-plane" ? "Merge gate, then build and push control plane images (§6.10)." : "Merge gate, then build and push the ${local.domain_repositories[r]} pipeline image to dda-pipelines (§6.10, P6-43)."
     } },
     { for r in local.repositories : "${r}-gate-override" => {
       repo        = r, kind = "manual", steps = local.override_steps[r], sa = local.apply_account[r], approval = true, secrets = true
       description = "Gate override for an unreviewed commit on main (§6.5.3)."
     } },
   ) : {}
+
+  # Domain image triggers fire only when the pipeline code changes (P6-43).
+  trigger_included_files = { for r in keys(local.domain_repositories) : "${r}-image" => ["pipelines/**"] }
 
   pipeline_accounts = toset([local.deployer_email, local.deployer_plan_email])
 }
@@ -199,6 +223,9 @@ resource "google_cloudbuild_trigger" "trigger" {
     ? concat(local.ignored_files, ["bootstrap/**"])
     : local.ignored_files
   )
+
+  # Domain image triggers fire only when the pipeline code changes (P6-43).
+  included_files = lookup(local.trigger_included_files, each.key, null)
 
   dynamic "repository_event_config" {
     for_each = each.value.kind == "manual" ? [] : [1]

@@ -278,6 +278,17 @@ variable "manage_group_memberships" {
   default     = true
 }
 
+variable "access_group_managers" {
+  description = "Product access group name (dda-dp-<product-id>-<env>-<access-group-id>) => Google accounts of the people in the product's owners group. Each becomes MEMBER and MANAGER of the group, so console approval can add members (OD-11, P6-42). Keep in step with the owners group by hand."
+  type        = map(list(string))
+  default     = {}
+
+  validation {
+    condition     = alltrue([for g in keys(var.access_group_managers) : can(regex("^dda-dp-[a-z0-9-]+$", g))])
+    error_message = "Access group names must start with dda-dp-."
+  }
+}
+
 variable "manage_deployer_service_accounts" {
   description = "true: bootstrap creates tf-deployer and tf-deployer-plan (§6.6.1). false: they were created by hand (change task 2.5) and are only read."
   type        = bool

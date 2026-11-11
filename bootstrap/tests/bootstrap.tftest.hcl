@@ -227,13 +227,22 @@ run "stage_2" {
     merge_gate_image_digest    = "sha256:1111111111111111111111111111111111111111111111111111111111111111"
     runner_image_digest        = "sha256:2222222222222222222222222222222222222222222222222222222222222222"
     github_app_installation_id = 12345678
+    access_group_managers      = { "dda-dp-customer-profile-dev-reader" = ["Owner@example.com"] }
+  }
+
+  assert {
+    condition = (
+      tolist(keys(google_cloud_identity_group_membership.access_group_manager)) == tolist(["dda-dp-customer-profile-dev-reader|owner@example.com"]) &&
+      sort([for r in google_cloud_identity_group_membership.access_group_manager["dda-dp-customer-profile-dev-reader|owner@example.com"].roles : r.name]) == tolist(["MANAGER", "MEMBER"])
+    )
+    error_message = "OD-11: each listed approver is MEMBER and MANAGER of the access group."
   }
 
   assert {
     condition = sort(keys(google_cloudbuild_trigger.trigger)) == sort([
       "dda-platform-plan", "dda-platform-apply", "cdmc-governance-plan", "cdmc-governance-apply",
       "dda-customer-plan", "dda-customer-apply", "dda-accounts-plan", "dda-accounts-apply",
-      "kc-control-plane-image",
+      "kc-control-plane-image", "dda-customer-image", "dda-accounts-image",
       "dda-platform-gate-override", "cdmc-governance-gate-override", "dda-customer-gate-override",
       "dda-accounts-gate-override", "kc-control-plane-gate-override",
     ])
@@ -250,7 +259,7 @@ run "stage_2" {
 
   assert {
     condition = alltrue([for k, t in google_cloudbuild_trigger.trigger :
-      t.build[0].step[0].id == "0-merge-gate" if endswith(k, "-apply") || k == "kc-control-plane-image"
+      t.build[0].step[0].id == "0-merge-gate" if endswith(k, "-apply") || endswith(k, "-image")
     ])
     error_message = "Every apply and image build starts with the merge gate."
   }
@@ -258,6 +267,17 @@ run "stage_2" {
   assert {
     condition     = [for s in google_cloudbuild_trigger.trigger["dda-customer-apply"].build[0].step : s.id] == ["0-merge-gate", "apply-envs-dev-core", "apply-envs-dev-contract", "promote-dev"]
     error_message = "dda-customer apply build order wrong."
+  }
+
+  assert {
+    condition = (
+      tolist(google_cloudbuild_trigger.trigger["dda-customer-image"].included_files) == tolist(["pipelines/**"]) &&
+      [for s in google_cloudbuild_trigger.trigger["dda-customer-image"].build[0].step : s.id] == ["0-merge-gate", "build-push", "publish", "promote-image"] &&
+      strcontains(google_cloudbuild_trigger.trigger["dda-customer-image"].build[0].step[1].args[1], "pltfrm-ngnrng/dda-pipelines") &&
+      strcontains(google_cloudbuild_trigger.trigger["dda-customer-image"].build[0].step[1].args[1], "customer-pipeline:$COMMIT_SHA") &&
+      strcontains(google_cloudbuild_trigger.trigger["dda-customer-image"].build[0].step[2].args[1], "outputs%2Fdda-customer%2Fimages.json")
+    )
+    error_message = "OD-12: domain image trigger fires on pipelines/** and builds, publishes and marks the pipeline image."
   }
 
   assert {
@@ -286,7 +306,7 @@ run "stage_2" {
   }
 
   assert {
-    condition     = length(google_storage_bucket_object.first_marker) == 5 && length(google_storage_bucket_object.identities) == 1
+    condition     = length(google_storage_bucket_object.first_marker) == 7 && length(google_storage_bucket_object.identities) == 1
     error_message = "Stage 2 writes first markers and identities.json."
   }
 
